@@ -367,6 +367,82 @@ async function runSuite() {
     const tamperOrderId = tamperRes.data?.order?.id || tamperRes.data?.order?._id;
     if (tamperOrderId) createdOrderIds.push(tamperOrderId);
 
+    // ── 6. Reverse Proxy Trust & Rate-Limiting Client IP Validation ───────────
+    console.log('\n--- 6. Reverse Proxy Trust & Rate-Limiting Client IP Validation ---');
+
+    const originalTrustProxy = process.env.TRUST_PROXY;
+    const originalRender = process.env.RENDER;
+    const originalNodeEnv = process.env.NODE_ENV;
+
+    try {
+      // Automatic default on Render
+      delete process.env.TRUST_PROXY;
+      process.env.RENDER = 'true';
+      delete process.env.NODE_ENV;
+      assertTest(
+        'resolveTrustProxy defaults to 1 hop when running on Render (RENDER=true)',
+        app.resolveTrustProxy() === 1
+      );
+
+      // Automatic default in production
+      delete process.env.RENDER;
+      process.env.NODE_ENV = 'production';
+      assertTest(
+        'resolveTrustProxy defaults to 1 hop when NODE_ENV is production',
+        app.resolveTrustProxy() === 1
+      );
+
+      // Explicit numeric configuration
+      process.env.TRUST_PROXY = '2';
+      assertTest(
+        'resolveTrustProxy parses explicit numeric hops (TRUST_PROXY=2)',
+        app.resolveTrustProxy() === 2
+      );
+
+      // Explicit disable
+      process.env.TRUST_PROXY = 'false';
+      assertTest(
+        'resolveTrustProxy respects explicit disable (TRUST_PROXY=false)',
+        app.resolveTrustProxy() === false
+      );
+
+      // Spoofing mitigation: TRUST_PROXY=true constrained to 1 hop
+      process.env.TRUST_PROXY = 'true';
+      assertTest(
+        'resolveTrustProxy constrains TRUST_PROXY="true" to 1 hop to prevent client IP spoofing',
+        app.resolveTrustProxy() === 1
+      );
+
+      // Default in development without proxy
+      delete process.env.TRUST_PROXY;
+      delete process.env.RENDER;
+      process.env.NODE_ENV = 'development';
+      assertTest(
+        'resolveTrustProxy defaults to false in local development without reverse proxy',
+        app.resolveTrustProxy() === false
+      );
+    } finally {
+      if (originalTrustProxy !== undefined) process.env.TRUST_PROXY = originalTrustProxy;
+      else delete process.env.TRUST_PROXY;
+      if (originalRender !== undefined) process.env.RENDER = originalRender;
+      else delete process.env.RENDER;
+      if (originalNodeEnv !== undefined) process.env.NODE_ENV = originalNodeEnv;
+      else delete process.env.NODE_ENV;
+    }
+
+    // End-to-end request with X-Forwarded-For through rate-limited endpoint
+    const clientIpRes = await request('/api/config', {
+      method: 'GET',
+      headers: {
+        'X-Forwarded-For': '203.0.113.195, 198.51.100.42'
+      }
+    });
+
+    assertTest(
+      'Rate-limited endpoints process X-Forwarded-For without ERR_ERL_UNEXPECTED_X_FORWARDED_FOR',
+      clientIpRes.status === 200 && clientIpRes.data?.success === true
+    );
+
   } catch (err) {
     console.error('Fatal test runner error:', err);
   } finally {

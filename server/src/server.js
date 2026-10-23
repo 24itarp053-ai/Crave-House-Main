@@ -28,6 +28,41 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 const RESTAURANT_NAME = process.env.RESTAURANT_NAME || 'Crave House';
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Configure Proxy Trust
+// - Render and standard single reverse-proxy deployments terminate TLS and forward requests with X-Forwarded-For.
+// - Setting 'trust proxy' to 1 instructs Express to trust the 1 immediate reverse-proxy hop.
+// - Trusting only 1 hop ensures Express and express-rate-limit resolve the real client IP from the
+//   entry appended by Render, while ignoring client-spoofed preceding addresses (prevents rate-limit bypass).
+// - Resolves express-rate-limit warning: ERR_ERL_UNEXPECTED_X_FORWARDED_FOR.
+const resolveTrustProxy = () => {
+  const envVal = process.env.TRUST_PROXY;
+  if (envVal !== undefined && envVal !== '') {
+    const trimmed = envVal.trim().toLowerCase();
+    if (trimmed === 'false' || trimmed === '0') return false;
+    if (trimmed === 'true') {
+      // Blindly trusting all hops ('true') makes req.ip vulnerable to client IP spoofing via X-Forwarded-For.
+      // We safely constrain it to 1 trusted reverse proxy hop.
+      console.warn('[Security] TRUST_PROXY="true" trusts all hops and enables client-IP spoofing. Constraining to 1 trusted proxy hop.');
+      return 1;
+    }
+    const num = parseInt(trimmed, 10);
+    if (!isNaN(num) && num >= 0) return num;
+    return envVal.trim();
+  }
+
+  // Automatic default on Render or in production: 1 hop (immediate reverse proxy)
+  if (process.env.RENDER === 'true' || process.env.NODE_ENV === 'production') {
+    return 1;
+  }
+
+  return false;
+};
+
+const trustProxySetting = resolveTrustProxy();
+if (trustProxySetting !== false) {
+  app.set('trust proxy', trustProxySetting);
+}
+
 // Build allowed origins list from comma-separated CLIENT_URL, dev (5173), and preview (4173)
 const configuredOrigins = (process.env.CLIENT_URL || 'http://localhost:5173')
   .split(',')
@@ -208,6 +243,7 @@ function validateProductionConfig() {
 }
 
 app.validateProductionConfig = validateProductionConfig;
+app.resolveTrustProxy = resolveTrustProxy;
 
 // 5. Connect to MongoDB and 9. Start server
 const startServer = async () => {
