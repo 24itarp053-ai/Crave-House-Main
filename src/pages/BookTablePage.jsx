@@ -193,12 +193,20 @@ export default function BookTablePage() {
   return (
     <main className="pizza-page">
       <style>{`
-        @media (max-width: 520px) {
+        @media (max-width: 768px) {
           .book-form-grid-2, .book-form-grid-3 {
             grid-template-columns: 1fr !important;
           }
           .book-form-actions {
             flex-direction: column;
+          }
+          .book-form-actions button {
+            min-height: 48px;
+          }
+        }
+        @media (max-width: 480px) {
+          .contact {
+            padding: 40px 16px !important;
           }
         }
       `}</style>

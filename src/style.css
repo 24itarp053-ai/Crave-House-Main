@@ -169,6 +169,10 @@ button {
   font-size: 24px;
 }
 
+.nav-mobile-only {
+  display: none !important;
+}
+
 /* ==========================================================================
    Hero Section
    ========================================================================== */
@@ -954,20 +958,115 @@ footer small {
     width: 100%;
     background: #3e2723;
     display: none;
-    padding: 20px 6vw;
+    padding: 20px 6vw 28px;
     flex-direction: column;
+    gap: 8px;
+    max-height: calc(100vh - 68px);
+    overflow-y: auto;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .nav nav.open {
     display: flex;
   }
 
-  .hamb {
-    display: block;
+  .nav nav a {
+    padding: 10px 0;
+    font-size: 15px;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   }
 
-  .login {
-    display: none;
+  .nav-mobile-only {
+    display: flex !important;
+  }
+
+  .nav-mobile-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.15);
+    margin: 6px 0;
+    width: 100%;
+  }
+
+  .nav-book-link {
+    color: var(--accent) !important;
+    font-weight: 700 !important;
+  }
+
+  .nav-mobile-auth {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 6px;
+    width: 100%;
+  }
+
+  .nav-mobile-user-link {
+    color: var(--accent) !important;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 10px 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-mobile-logout-btn {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: center;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .nav-mobile-login-link {
+    background: var(--accent);
+    color: #2f1b13 !important;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: none !important;
+  }
+
+  .nav-mobile-register-link {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #ffffff !important;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: none !important;
+  }
+
+  .hamb {
+    display: block;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .login,
+  .navbar-logout-btn {
+    display: none !important;
   }
 
   .hero-dish {
@@ -1020,7 +1119,7 @@ footer small {
   }
 
   .hero h1 {
-    font-size: 46px;
+    font-size: clamp(30px, 8.5vw, 46px);
   }
 
   .hero-dish {
@@ -1099,6 +1198,27 @@ footer small {
 
   .scroll {
     display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 10px;
+  }
+
+  .actions .button {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+    font-size: 13px;
+  }
+
+  .hero-meta {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
   }
 }
 

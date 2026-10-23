@@ -611,11 +611,11 @@ export function MenuItemModal({ mode, item, categories, onClose, onSaved }) {
   const overlayStyle = {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
     background: 'rgba(0,0,0,0.5)', zIndex: 9999,
-    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
+    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 'clamp(10px, 3vw, 20px)'
   };
   const contentStyle = {
     background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '600px',
-    maxHeight: '90vh', overflowY: 'auto', padding: '30px',
+    maxHeight: '92vh', overflowY: 'auto', padding: 'clamp(18px, 4vw, 30px)',
     boxShadow: '0 4px 20px rgba(0,0,0,0.15)', position: 'relative', color: '#333'
   };
   const fieldStyle = {
@@ -639,7 +639,7 @@ export function MenuItemModal({ mode, item, categories, onClose, onSaved }) {
           <div style={fieldStyle}><label style={labelStyle}>Name *</label><input style={inputStyle} name="name" value={form.name} onChange={handleChange} placeholder="e.g. Margherita Pizza" required /></div>
           <div style={fieldStyle}><label style={labelStyle}>Slug * (URL-safe, unique)</label><input style={inputStyle} name="slug" value={form.slug} onChange={handleChange} placeholder="e.g. margherita-pizza" required /></div>
           <div style={fieldStyle}><label style={labelStyle}>Description *</label><textarea style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }} name="description" value={form.description} onChange={handleChange} placeholder="Short description" required /></div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <div style={fieldStyle}><label style={labelStyle}>Price (₹) *</label><input style={inputStyle} type="number" min="0" step="0.01" name="price" value={form.price} onChange={handleChange} placeholder="249" required /></div>
             <div style={fieldStyle}>
               <label style={labelStyle}>Category *</label>
@@ -1514,16 +1514,16 @@ export function OrderDetailsModal({
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      padding: '20px'
+      padding: 'clamp(10px, 3vw, 20px)'
     }} onClick={handleClose}>
       <div className="dash-modal-content" style={{
         background: '#fff',
         borderRadius: '8px',
         width: '100%',
         maxWidth: '750px',
-        maxHeight: '90vh',
+        maxHeight: '92vh',
         overflowY: 'auto',
-        padding: '30px',
+        padding: 'clamp(18px, 4vw, 30px)',
         boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
         position: 'relative',
         color: '#333'

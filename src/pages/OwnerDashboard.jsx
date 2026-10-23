@@ -596,11 +596,11 @@ export function TableModal({ mode, table, onClose, onSaved }) {
   const overlayStyle = {
     position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
     background: 'rgba(0,0,0,0.5)', zIndex: 9999,
-    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
+    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: 'clamp(10px, 3vw, 20px)'
   };
   const contentStyle = {
     background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '520px',
-    maxHeight: '90vh', overflowY: 'auto', padding: '30px',
+    maxHeight: '92vh', overflowY: 'auto', padding: 'clamp(18px, 4vw, 30px)',
     boxShadow: '0 4px 20px rgba(0,0,0,0.15)', position: 'relative', color: '#333'
   };
   const fieldStyle = {
@@ -627,7 +627,7 @@ export function TableModal({ mode, table, onClose, onSaved }) {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
             <div style={fieldStyle}>
               <label style={labelStyle}>Table Identifier / Number *</label>
               <input

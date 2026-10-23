@@ -107,7 +107,7 @@ export default function MyReservationsPage() {
       </section>
 
       {/* ── Content ── */}
-      <div className="product-details-container" style={{ padding: '60px max(6vw, 24px) 80px' }}>
+      <div className="product-details-container" style={{ padding: 'clamp(24px, 5vw, 60px) clamp(14px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
 
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: '#888' }}>

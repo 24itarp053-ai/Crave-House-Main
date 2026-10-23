@@ -296,26 +296,58 @@
   }
 
   .pizza-back {
-    display: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #ead8cd;
+    min-height: 44px;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: background-color 0.2s;
+  }
+
+  .pizza-back:hover {
+    background-color: rgba(255, 255, 255, 0.08);
   }
 }
 
 @media (max-width: 520px) {
   .pizza-nav {
     height: 67px;
+    padding: 0 14px;
+    gap: 8px;
+  }
+
+  .pizza-brand {
+    font-size: 16px;
+    gap: 6px;
+  }
+
+  .pizza-brand span {
+    width: 28px;
+    height: 28px;
+    font-size: 11px;
   }
 
   .pizza-brand i {
-    font-size: 17px;
+    font-size: 15px;
+  }
+
+  .pizza-back {
+    font-size: 11px;
+    padding: 6px 8px;
+    gap: 4px;
   }
 
   .pizza-cart {
-    padding: 8px;
-    font-size: 0;
+    padding: 7px 11px;
+    font-size: 11px;
+    min-height: 38px;
   }
 
   .pizza-cart svg {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .pizza-hero {
@@ -3667,6 +3699,39 @@
 
   .tables-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .dash-modal-overlay {
+    padding: 10px !important;
+  }
+
+  .dash-modal-content {
+    padding: 20px 14px !important;
+    max-height: 94vh !important;
+    border-radius: 12px !important;
+  }
+
+  .auth-container {
+    padding: 24px 14px 40px !important;
+  }
+
+  .auth-card {
+    padding: 24px 16px !important;
+    border-radius: 20px !important;
+  }
+
+  .auth-header h2 {
+    font-size: 20px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .tables-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-topbar {
+    padding: 10px 12px;
   }
 }
 

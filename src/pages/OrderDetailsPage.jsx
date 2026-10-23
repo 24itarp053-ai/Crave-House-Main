@@ -134,7 +134,7 @@ export default function OrderDetailsPage() {
       </section>
 
       {/* Main Container */}
-      <div className="product-details-container" style={{ padding: '60px max(6vw, 24px) 80px' }}>
+      <div className="product-details-container" style={{ padding: 'clamp(24px, 5vw, 60px) clamp(14px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
         {authLoading || loadingOrder ? (
           /* Loading State */
           <div className="empty-cart-wrapper">
@@ -200,8 +200,8 @@ export default function OrderDetailsPage() {
                 </div>
               ) : (
                 /* Stepper Representation */
-                <div style={{ margin: '30px 0 10px' }}>
-                  <div className="tracking-steps-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
+                <div style={{ margin: '30px 0 10px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '8px' }}>
+                  <div className="tracking-steps-wrapper" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', minWidth: '440px' }}>
                     
                     {/* Stepper bar background */}
                     <div style={{

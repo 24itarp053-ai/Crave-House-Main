@@ -47,6 +47,51 @@ export default function Navbar() {
             {link.label}
           </a>
         ))}
+        <Link
+          to="/book-table"
+          className="nav-mobile-only nav-book-link"
+          onClick={() => setIsMenuOpen(false)}
+        >
+          Book a Table
+        </Link>
+        <div className="nav-mobile-only nav-mobile-divider" />
+        {isAuthenticated && user ? (
+          <div className="nav-mobile-only nav-mobile-auth">
+            <Link
+              to={user.role === 'admin' ? '/admin' : user.role === 'owner' ? '/owner' : '/account'}
+              className="nav-mobile-user-link"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              My Account ({user.name.split(' ')[0]})
+            </Link>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                logout();
+              }}
+              className="nav-mobile-logout-btn"
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <div className="nav-mobile-only nav-mobile-auth">
+            <Link
+              to="/login"
+              className="nav-mobile-login-link"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Login
+            </Link>
+            <Link
+              to="/register"
+              className="nav-mobile-register-link"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Create Account
+            </Link>
+          </div>
+        )}
       </nav>
 
       <div className="navtools">

@@ -146,7 +146,7 @@ export default function CustomerDashboard() {
       </section>
 
       {/* Dashboard Content Container */}
-      <div className="product-details-container" style={{ padding: '60px max(6vw, 24px) 80px' }}>
+      <div className="product-details-container" style={{ padding: 'clamp(24px, 5vw, 60px) clamp(14px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
         <div className="dashboard-layout">
           {/* Left Column containing Profile + Password Cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>

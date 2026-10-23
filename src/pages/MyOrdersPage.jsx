@@ -92,7 +92,7 @@ export default function MyOrdersPage() {
       </section>
 
       {/* Orders Container */}
-      <div className="product-details-container" style={{ padding: '60px max(6vw, 24px) 80px' }}>
+      <div className="product-details-container" style={{ padding: 'clamp(24px, 5vw, 60px) clamp(14px, 4vw, 24px) clamp(40px, 6vw, 80px)' }}>
         {loading ? (
           <div className="empty-cart-wrapper">
             <h2>Loading your orders...</h2>
