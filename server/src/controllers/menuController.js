@@ -8,11 +8,29 @@ const Category = require('../models/Category');
 const buildMenuQueryAndFilters = async (req) => {
   const queryObj = { isAvailable: true };
 
-  // 1. Category Filter by Slug
+  // 1. Category Filter by Slug or ID
   if (req.query.category) {
-    const categorySlug = req.query.category.toLowerCase().trim();
-    const categoryDoc = await Category.findOne({ slug: categorySlug, isActive: true });
-    
+    const categoryInput = req.query.category.trim();
+    let categoryDoc = null;
+
+    // Check if input is a valid ObjectId
+    if (mongoose.Types.ObjectId.isValid(categoryInput)) {
+      categoryDoc = await Category.findOne({ _id: categoryInput, isActive: true });
+    }
+
+    // Check by exact slug
+    if (!categoryDoc) {
+      categoryDoc = await Category.findOne({ slug: categoryInput.toLowerCase(), isActive: true });
+    }
+
+    // Tolerant singular / plural slug fallback (e.g. burger <-> burgers, salad <-> salads)
+    if (!categoryDoc) {
+      const altSlug = categoryInput.endsWith('s')
+        ? categoryInput.slice(0, -1)
+        : `${categoryInput}s`;
+      categoryDoc = await Category.findOne({ slug: altSlug.toLowerCase(), isActive: true });
+    }
+
     if (!categoryDoc) {
       // Category slug doesn't exist, return a query that yields empty results
       queryObj.category = new mongoose.Types.ObjectId();

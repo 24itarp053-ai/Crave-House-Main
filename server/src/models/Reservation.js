@@ -53,11 +53,58 @@ const reservationSchema = new mongoose.Schema(
     table: {
       type: String,
       default: 'T-TBD'
+    },
+    tableId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Table',
+      default: null
+    },
+    durationMinutes: {
+      type: Number,
+      default: 90,
+      min: 30,
+      max: 240
+    },
+    notifications: {
+      created: {
+        status: {
+          type: String,
+          enum: ['none', 'pending', 'sending', 'sent', 'failed'],
+          default: 'none'
+        },
+        attempts: { type: Number, default: 0 },
+        sentAt: { type: Date },
+        lastAttemptAt: { type: Date },
+        lastError: { type: String },
+        messageId: { type: String }
+      },
+      statusChange: {
+        status: {
+          type: String,
+          enum: ['none', 'pending', 'sending', 'sent', 'failed'],
+          default: 'none'
+        },
+        attempts: { type: Number, default: 0 },
+        lastStatusNotified: { type: String },
+        sentAt: { type: Date },
+        lastAttemptAt: { type: Date },
+        lastError: { type: String },
+        messageId: { type: String }
+      },
+      createdSent: { type: Boolean, default: false },
+      createdSentAt: { type: Date },
+      statusChangedSent: { type: Boolean, default: false },
+      lastStatusNotified: { type: String },
+      statusChangedSentAt: { type: Date }
     }
   },
   {
     timestamps: true
   }
 );
+
+// Performance & Concurrency Indexes
+reservationSchema.index({ tableId: 1, date: 1, status: 1 });
+reservationSchema.index({ date: 1, status: 1 });
 
 module.exports = mongoose.model('Reservation', reservationSchema);

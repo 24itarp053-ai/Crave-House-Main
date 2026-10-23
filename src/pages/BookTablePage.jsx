@@ -3,8 +3,10 @@ import { Link } from 'react-router-dom';
 import { FiArrowLeft, FiShoppingBag, FiMapPin, FiPhone, FiClock, FiArrowUpRight, FiCalendar } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { createReservation } from '../services/reservationService';
+import { createReservation, checkTableAvailability } from '../services/reservationService';
 import Footer from '../components/Footer';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function BookTablePage() {
@@ -77,7 +79,7 @@ export default function BookTablePage() {
     return { valid: true };
   };
 
-  const handleCheckAvailability = () => {
+  const handleCheckAvailability = async () => {
     const validation = validateForm();
     if (!validation.valid) {
       setAvailabilityMessage({
@@ -89,24 +91,33 @@ export default function BookTablePage() {
 
     setAvailabilityMessage({
       type: 'info',
-      text: 'Checking table availability for your slot...'
+      text: 'Checking live table availability in our reservation system...'
     });
 
-    setTimeout(() => {
-      const hour = parseInt(formData.time.split(':')[0], 10);
-      // Simulate fully booked times (e.g., 2 PM to 4 PM or after 10 PM)
-      if ((hour >= 14 && hour < 16) || hour >= 22) {
+    try {
+      const res = await checkTableAvailability({
+        date: formData.date,
+        time: formData.time,
+        guests: Number(formData.guests)
+      });
+
+      if (res.available) {
         setAvailabilityMessage({
-          type: 'warning',
-          text: '✗ Sorry, we are fully booked during this time slot. Please try another hour.'
+          type: 'success',
+          text: `✓ ${res.message || 'Tables are available! You can proceed to Book Table.'}`
         });
       } else {
         setAvailabilityMessage({
-          type: 'success',
-          text: '✓ Tables are available! You can proceed to Book Table.'
+          type: 'warning',
+          text: `✗ ${res.message || 'Sorry, we are fully booked during this time slot.'}`
         });
       }
-    }, 1000);
+    } catch (err) {
+      setAvailabilityMessage({
+        type: 'error',
+        text: err.message || 'Failed to verify availability. Please try again.'
+      });
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -193,10 +204,7 @@ export default function BookTablePage() {
       `}</style>
 
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/" className="pizza-back">
           <FiArrowLeft /> Back to home
@@ -231,8 +239,8 @@ export default function BookTablePage() {
             <div>
               <h4 style={{ margin: '0 0 5px 0', fontFamily: 'Poppins', fontWeight: 600 }}>Location</h4>
               <p style={{ margin: 0, color: '#6c554a' }}>
-                18, Olive Street, Near Central Park<br />
-                Ahmedabad, Gujarat 380015
+                {restaurantConfig.contact.address.street}<br />
+                {restaurantConfig.contact.address.city}, {restaurantConfig.contact.address.state} {restaurantConfig.contact.address.pincode}
               </p>
             </div>
           </div>
@@ -242,8 +250,8 @@ export default function BookTablePage() {
             <div>
               <h4 style={{ margin: '0 0 5px 0', fontFamily: 'Poppins', fontWeight: 600 }}>Get In Touch</h4>
               <p style={{ margin: 0, color: '#6c554a' }}>
-                +91 98765 43210<br />
-                hello@cravehouse.in
+                {restaurantConfig.contact.phone}<br />
+                {restaurantConfig.contact.email}
               </p>
             </div>
           </div>
@@ -253,8 +261,8 @@ export default function BookTablePage() {
             <div>
               <h4 style={{ margin: '0 0 5px 0', fontFamily: 'Poppins', fontWeight: 600 }}>Opening Hours</h4>
               <p style={{ margin: 0, color: '#6c554a' }}>
-                Mon – Fri: <strong>10AM – 10PM</strong><br />
-                Sat – Sun: <strong>9AM – 11PM</strong>
+                {restaurantConfig.businessHours.weekdays.days}: <strong>{restaurantConfig.businessHours.weekdays.hours}</strong><br />
+                {restaurantConfig.businessHours.weekends.days}: <strong>{restaurantConfig.businessHours.weekends.hours}</strong>
               </p>
             </div>
           </div>

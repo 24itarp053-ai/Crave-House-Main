@@ -12,6 +12,7 @@ const categoriesData = [
     slug: 'pizza',
     description: 'Freshly baked pizzas loaded with premium cheese and farm-fresh vegetables.',
     image: '/src/assets/images/pizza.png',
+    displayOrder: 1,
     isActive: true
   },
   {
@@ -19,6 +20,7 @@ const categoriesData = [
     slug: 'burgers',
     description: 'Juicy handcrafted vegetarian burgers with crispy patties and delicious sauces.',
     image: '/src/assets/images/burger.png',
+    displayOrder: 2,
     isActive: true
   },
   {
@@ -26,6 +28,7 @@ const categoriesData = [
     slug: 'pasta',
     description: 'Creamy and cheesy Italian pasta made with authentic herbs and fresh ingredients.',
     image: '/src/assets/images/pasta.png',
+    displayOrder: 3,
     isActive: true
   },
   {
@@ -33,6 +36,7 @@ const categoriesData = [
     slug: 'salads',
     description: 'Healthy, colorful salads made with fresh vegetables and homemade dressings.',
     image: '/src/assets/images/salad.png',
+    displayOrder: 4,
     isActive: true
   },
   {
@@ -40,6 +44,7 @@ const categoriesData = [
     slug: 'drinks',
     description: 'Refreshing shakes, mojitos, lemonades and signature beverages.',
     image: '/src/assets/images/drinks.png',
+    displayOrder: 5,
     isActive: true
   },
   {
@@ -47,6 +52,7 @@ const categoriesData = [
     slug: 'desserts',
     description: 'Delicious cakes, brownies, cheesecakes and sweet treats for every craving.',
     image: '/src/assets/images/desserts.png',
+    displayOrder: 6,
     isActive: true
   }
 ];
@@ -386,10 +392,10 @@ const menuItemsData = {
 };
 
 const seedMenu = async () => {
-  const mongoURI = process.env.MONGODB_URI;
+  const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!mongoURI) {
-    console.error('Error: MONGODB_URI is not defined in environment variables.');
+    console.error('Error: MONGODB_URI (or MONGO_URI) is not defined in environment variables.');
     process.exit(1);
   }
 
@@ -408,6 +414,10 @@ const seedMenu = async () => {
         console.log(`Seeded category: ${category.name} (${category.slug})`);
         categoriesCreated++;
       } else {
+        if ((category.displayOrder === undefined || category.displayOrder === null) && catData.displayOrder !== undefined) {
+          category.displayOrder = catData.displayOrder;
+          await category.save();
+        }
         console.log(`Category exists: ${category.name}. Skipping.`);
       }
 

@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import restaurantConfig, { applyTheme, applyRemoteConfig } from './config/restaurantConfig';
+import { fetchPublicRestaurantConfig } from './services/configService';
 import HomePage from './pages/HomePage';
 import PizzaPage from './pages/PizzaPage';
 import CategoryPage from './pages/CategoryPage';
@@ -24,6 +26,25 @@ import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
+  useEffect(() => {
+    // 1. Initial build-time defaults
+    if (restaurantConfig.name) {
+      document.title = `${restaurantConfig.name} — ${restaurantConfig.tagline}`;
+    }
+    applyTheme(restaurantConfig.theme);
+
+    // 2. Runtime synchronization with authoritative backend settings
+    async function syncSettings() {
+      try {
+        const remote = await fetchPublicRestaurantConfig();
+        if (remote) {
+          applyRemoteConfig(remote);
+        }
+      } catch (_) {}
+    }
+    syncSettings();
+  }, []);
+
   return (
     <CartProvider>
       <AuthProvider>
@@ -42,6 +63,8 @@ export default function App() {
             <Route path="/menu/drinks/:id" element={<ProductDetail />} />
             <Route path="/menu/desserts" element={<CategoryPage category="desserts" />} />
             <Route path="/menu/desserts/:id" element={<ProductDetail />} />
+            <Route path="/menu/:category" element={<CategoryPage />} />
+            <Route path="/menu/:category/:id" element={<ProductDetail />} />
             <Route path="/order" element={<OrderPage />} />
             <Route path="/book-table" element={<BookTablePage />} />
             <Route path="/cart" element={<CartPage />} />

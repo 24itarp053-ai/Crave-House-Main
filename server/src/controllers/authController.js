@@ -97,6 +97,14 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Check account operational status
+    if (user.status && user.status !== 'Active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Account has been deactivated. Please contact support.'
+      });
+    }
+
     // 3. Generate token
     const token = generateToken(user);
 

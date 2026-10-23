@@ -1,6 +1,8 @@
 import React from 'react';
 import { Logo } from './Navbar';
 
+import restaurantConfig from '../config/restaurantConfig';
+
 export default function Footer() {
   return (
     <footer>
@@ -12,7 +14,7 @@ export default function Footer() {
         <a href="#about">About</a>
         <a href="#contact">Contact</a>
       </div>
-      <small>© {new Date().getFullYear()} Crave House. Made with flavour.</small>
+      <small>© {new Date().getFullYear()} {restaurantConfig.name}. Made with flavour.</small>
     </footer>
   );
 }

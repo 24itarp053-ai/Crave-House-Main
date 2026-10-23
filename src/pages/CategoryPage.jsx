@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { FiArrowLeft, FiShoppingBag, FiSearch, FiSliders, FiRefreshCw } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
-import { getMenuItemsByCategory } from '../services/menuService';
+import { getMenuItemsByCategory, getCategoryBySlug, resolveImage } from '../services/menuService';
 import '../pizza-page.css';
 import ProductCard from '../components/ProductCard';
+import BrandLogo from '../components/BrandLogo';
 
 // Import hero banner images (stays local — Vite assets)
+import pizzaHeroImg   from '../assets/images/pizza.png';
 import burgerHeroImg  from '../assets/images/burger.png';
 import pastaHeroImg   from '../assets/images/pasta.png';
 import saladHeroImg   from '../assets/images/salad.png';
@@ -14,9 +16,27 @@ import drinksHeroImg  from '../assets/images/drinks.png';
 import dessertHeroImg from '../assets/images/desserts.png';
 
 // Static config per category: title, subtitle, eyebrow, hero image
-// Data is now fetched from the API — not stored here.
+// Dynamic database categories seamlessly fall back or augment these defaults
 const categoryConfigs = {
+  pizza: {
+    title: 'Pizza, the way it should be.',
+    subtitle: 'Fresh dough, premium cheese and a little magic in every slice.',
+    eyebrow: 'Hand-tossed with love',
+    image: pizzaHeroImg,
+  },
+  pizzas: {
+    title: 'Pizza, the way it should be.',
+    subtitle: 'Fresh dough, premium cheese and a little magic in every slice.',
+    eyebrow: 'Hand-tossed with love',
+    image: pizzaHeroImg,
+  },
   burger: {
+    title: 'Delicious Veg Burgers',
+    subtitle: 'Freshly grilled vegetarian burgers made with premium ingredients.',
+    eyebrow: 'Handcrafted Stacks',
+    image: burgerHeroImg,
+  },
+  burgers: {
     title: 'Delicious Veg Burgers',
     subtitle: 'Freshly grilled vegetarian burgers made with premium ingredients.',
     eyebrow: 'Handcrafted Stacks',
@@ -29,6 +49,12 @@ const categoryConfigs = {
     image: pastaHeroImg,
   },
   salad: {
+    title: 'Healthy Fresh Salads',
+    subtitle: 'Healthy, colorful salads made with fresh vegetables and homemade dressings.',
+    eyebrow: 'Fresh & Green',
+    image: saladHeroImg,
+  },
+  salads: {
     title: 'Healthy Fresh Salads',
     subtitle: 'Healthy, colorful salads made with fresh vegetables and homemade dressings.',
     eyebrow: 'Fresh & Green',
@@ -63,9 +89,11 @@ const SORT_MAP = {
   rating:       'rating',
 };
 
-export default function CategoryPage({ category }) {
+export default function CategoryPage({ category: propCategory }) {
+  const params = useParams();
+  const category = propCategory || params.category;
   const { cartCount } = useCart();
-  const config = categoryConfigs[category];
+  const [categoryDoc, setCategoryDoc] = useState(null);
 
   // All hooks must be declared before any conditional return
   const [items, setItems]               = useState([]);
@@ -78,6 +106,18 @@ export default function CategoryPage({ category }) {
 
   const debounceTimer = useRef(null);
 
+  // Fetch dynamic category details from database
+  useEffect(() => {
+    async function loadCategoryDetails() {
+      if (!category) return;
+      try {
+        const cat = await getCategoryBySlug(category);
+        if (cat) setCategoryDoc(cat);
+      } catch (_) {}
+    }
+    loadCategoryDetails();
+  }, [category]);
+
   // Debounce search: only update debouncedQuery 300ms after the user stops typing
   useEffect(() => {
     clearTimeout(debounceTimer.current);
@@ -89,16 +129,17 @@ export default function CategoryPage({ category }) {
 
   // Fetch items whenever category, filter, sort, or debounced search changes
   const fetchItems = async (cat, query, filter, sort) => {
+    if (!cat) return;
     setLoading(true);
     setError(null);
     try {
-      const params = {
+      const queryParams = {
         limit: 50,
         ...(query && { search: query }),
         ...FILTER_PARAMS[filter],
         ...(SORT_MAP[sort] && { sort: SORT_MAP[sort] }),
       };
-      const result = await getMenuItemsByCategory(cat, params);
+      const result = await getMenuItemsByCategory(cat, queryParams);
       setItems(result.items);
     } catch (err) {
       setError(err.message || 'Unable to load menu. Please try again.');
@@ -109,11 +150,22 @@ export default function CategoryPage({ category }) {
   };
 
   useEffect(() => {
-    fetchItems(category, debouncedQuery, selectedFilter, sortBy);
+    if (category) {
+      fetchItems(category, debouncedQuery, selectedFilter, sortBy);
+    }
   }, [category, debouncedQuery, selectedFilter, sortBy]);
 
-  // Guard: must be after all hooks
-  if (!config) {
+  const staticConfig = categoryConfigs[category] || (category ? categoryConfigs[category.toLowerCase()] : null);
+  const fallbackTitle = category ? (category.charAt(0).toUpperCase() + category.slice(1)) : 'Menu';
+  const config = {
+    title: categoryDoc?.name || staticConfig?.title || fallbackTitle,
+    subtitle: categoryDoc?.description || staticConfig?.subtitle || `Explore our freshly prepared ${category} selection.`,
+    eyebrow: staticConfig?.eyebrow || 'Menu Category',
+    image: (categoryDoc?.image && resolveImage(categoryDoc.image)) || staticConfig?.image || burgerHeroImg
+  };
+
+  // Guard: if error and no category exists
+  if (!loading && !staticConfig && !categoryDoc && items.length === 0 && error) {
     return (
       <main className="pizza-page" style={{ minHeight: '100vh' }}>
         <div style={{ padding: '120px 20px', textAlign: 'center', background: '#f8f5ed' }}>
@@ -130,10 +182,7 @@ export default function CategoryPage({ category }) {
   return (
     <main className="pizza-page">
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/" className="pizza-back">
           <FiArrowLeft /> Back to home

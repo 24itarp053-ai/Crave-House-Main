@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FiMinus, FiPlus, FiTrash2, FiShoppingBag, FiArrowLeft, FiArrowRight, FiAlertTriangle } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import Footer from '../components/Footer';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function CartPage() {
@@ -38,10 +39,7 @@ export default function CartPage() {
     <main className="pizza-page">
       {/* Navbar Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/order" className="pizza-back">
           <FiArrowLeft /> Back to Menu

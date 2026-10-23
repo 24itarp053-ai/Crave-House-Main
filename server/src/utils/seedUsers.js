@@ -6,10 +6,10 @@ const User = require('../models/User');
 dotenv.config();
 
 const seedUsers = async () => {
-  const mongoURI = process.env.MONGODB_URI;
+  const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
 
   if (!mongoURI) {
-    console.error('Error: MONGODB_URI is not defined in environment variables.');
+    console.error('Error: MONGODB_URI (or MONGO_URI) is not defined in environment variables.');
     process.exit(1);
   }
 
@@ -18,20 +18,45 @@ const seedUsers = async () => {
     await mongoose.connect(mongoURI);
     console.log('MongoDB connected for seeding users...');
 
+    const isProduction = process.env.NODE_ENV === 'production';
+    const adminEmail = process.env.SEED_ADMIN_EMAIL || 'admin@cravehouse.demo';
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'password123';
+    const ownerEmail = process.env.SEED_OWNER_EMAIL || 'owner@cravehouse.demo';
+    const ownerPassword = process.env.SEED_OWNER_PASSWORD || 'password123';
+
+    if (isProduction) {
+      if (!process.env.SEED_ADMIN_PASSWORD || !process.env.SEED_OWNER_PASSWORD) {
+        console.error('❌ [Security] Refusing to seed accounts in production without explicit SEED_ADMIN_PASSWORD and SEED_OWNER_PASSWORD.');
+        process.exit(1);
+      }
+      if (adminPassword === 'password123' || ownerPassword === 'password123') {
+        console.error('❌ [Security] Refusing to seed accounts with insecure default demo password ("password123") in production.');
+        process.exit(1);
+      }
+      if (adminPassword === ownerPassword) {
+        console.error('❌ [Security] Refusing to seed accounts in production when SEED_ADMIN_PASSWORD and SEED_OWNER_PASSWORD are identical. Initial staff accounts require distinct, unique passwords.');
+        process.exit(1);
+      }
+      if (adminEmail.toLowerCase() === ownerEmail.toLowerCase()) {
+        console.error('❌ [Security] Refusing to seed accounts when SEED_ADMIN_EMAIL and SEED_OWNER_EMAIL are identical. Initial staff accounts require distinct email addresses.');
+        process.exit(1);
+      }
+    }
+
     // Privileged seed users
     const seedData = [
       {
-        name: 'Demo Admin',
-        email: 'admin@cravehouse.demo',
-        password: 'password123',
-        phone: '1111111111',
+        name: process.env.SEED_ADMIN_NAME || 'Restaurant Admin',
+        email: adminEmail,
+        password: adminPassword,
+        phone: process.env.SEED_ADMIN_PHONE || '1111111111',
         role: 'admin'
       },
       {
-        name: 'Demo Owner',
-        email: 'owner@cravehouse.demo',
-        password: 'password123',
-        phone: '2222222222',
+        name: process.env.SEED_OWNER_NAME || 'Restaurant Owner',
+        email: ownerEmail,
+        password: ownerPassword,
+        phone: process.env.SEED_OWNER_PHONE || '2222222222',
         role: 'owner'
       }
     ];

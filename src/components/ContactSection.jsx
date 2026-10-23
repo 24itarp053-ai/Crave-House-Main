@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiArrowUpRight, FiHeart, FiInstagram, FiMapPin, FiPhone } from 'react-icons/fi';
+import restaurantConfig from '../config/restaurantConfig';
 
 export default function ContactSection() {
   const handleSubmit = (event) => {
@@ -20,25 +21,37 @@ export default function ContactSection() {
         <div>
           <FiMapPin />
           <p>
-            18, Olive Street, Near Central Park
+            {restaurantConfig.contact.address.street}
             <br />
-            Ahmedabad, Gujarat 380015
+            {restaurantConfig.contact.address.city}, {restaurantConfig.contact.address.state} {restaurantConfig.contact.address.pincode}
           </p>
         </div>
 
         <div>
           <FiPhone />
           <p>
-            +91 98765 43210
+            {restaurantConfig.contact.phone}
             <br />
-            hello@cravehouse.in
+            {restaurantConfig.contact.email}
           </p>
         </div>
 
         <div className="social">
-          <FiInstagram />
-          <FiHeart />
-          <FiMapPin />
+          {restaurantConfig.social?.instagram && (
+            <a href={restaurantConfig.social.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+              <FiInstagram />
+            </a>
+          )}
+          {restaurantConfig.social?.facebook && (
+            <a href={restaurantConfig.social.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+              <FiHeart />
+            </a>
+          )}
+          {restaurantConfig.social?.twitter && (
+            <a href={restaurantConfig.social.twitter} target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+              <FiMapPin />
+            </a>
+          )}
         </div>
       </div>
 

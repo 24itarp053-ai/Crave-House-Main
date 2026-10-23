@@ -6,6 +6,7 @@ import { useCart } from '../context/CartContext';
 import { getMenuItemById, getMenuItemsByCategory } from '../services/menuService';
 import '../pizza-page.css';
 import ProductCard from '../components/ProductCard';
+import BrandLogo from '../components/BrandLogo';
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -18,8 +19,11 @@ export default function ProductDetail() {
   const [error, setError]               = useState(null);
   const { cartCount, addToCart } = useCart();
 
-  // Extract category from path (e.g. "/menu/burger/6a7b..." → "burger")
-  const category = location.pathname.split('/')[2] || 'pizza';
+  // Extract category from path (e.g. "/menu/burger/6a7b..." → "burger") or item document
+  const pathCategory = location.pathname.split('/')[2];
+  const category = (pathCategory && pathCategory !== 'menu' && pathCategory !== id)
+    ? pathCategory
+    : (item?.category?.slug || 'pizza');
 
   // Scroll to top on route change
   useEffect(() => {
@@ -123,10 +127,7 @@ export default function ProductDetail() {
   return (
     <main className="pizza-page">
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <button onClick={() => navigate(-1)} className="pizza-back" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
           <FiArrowLeft /> Go Back

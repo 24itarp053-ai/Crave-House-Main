@@ -4,6 +4,8 @@ import { FiArrowLeft, FiShoppingBag, FiMail, FiLock, FiAlertCircle } from 'react
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Footer from '../components/Footer';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function LoginPage() {
@@ -66,10 +68,7 @@ export default function LoginPage() {
     <main className="pizza-page">
       {/* Header Navigation */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/" className="pizza-back">
           <FiArrowLeft /> Back to home
@@ -84,8 +83,8 @@ export default function LoginPage() {
       <section className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <span className="logo-badge">CH</span>
-            <h2>CRAVE HOUSE</h2>
+            <span className="logo-badge">{restaurantConfig.shortName}</span>
+            <h2>{restaurantConfig.name.toUpperCase()}</h2>
             <p className="auth-subtitle">Welcome Back</p>
           </div>
 
@@ -111,7 +110,7 @@ export default function LoginPage() {
                 <input
                   type="email"
                   id="email"
-                  placeholder="name@cravehouse.demo"
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -141,11 +140,6 @@ export default function LoginPage() {
                 />
               </div>
               {errors.password && <span className="inline-error-msg">{errors.password}</span>}
-            </div>
-
-            {/* Demo Helpers Info */}
-            <div className="demo-credentials-info">
-              <p>Demo Customer Creds: <strong>customer@cravehouse.demo</strong> / <strong>password123</strong></p>
             </div>
 
             {/* Login Button */}

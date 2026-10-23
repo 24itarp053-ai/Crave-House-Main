@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { getOrderById } from '../services/orderService';
 import Footer from '../components/Footer';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 // Vite image resolution module loader (same as menuService.js)
@@ -110,10 +111,7 @@ export default function OrderDetailsPage() {
     <main className="pizza-page">
       {/* Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/orders" className="pizza-back">
           <FiArrowLeft /> Back to Orders

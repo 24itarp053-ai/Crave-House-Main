@@ -2,13 +2,20 @@ const mongoose = require('mongoose');
 const Category = require('../models/Category');
 const MenuItem = require('../models/MenuItem');
 
+const RESERVED_SLUGS = ['admin', 'all', 'undefined', 'null', 'api', 'new'];
+
+function escapeRegex(text) {
+  return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
+}
+
 /**
  * Fetch all active categories
  * GET /api/categories
+ * Access: Public
  */
 const getCategories = async (req, res, next) => {
   try {
-    const categories = await Category.find({ isActive: true });
+    const categories = await Category.find({ isActive: true }).sort({ displayOrder: 1, name: 1 });
     res.status(200).json({
       success: true,
       count: categories.length,
@@ -20,8 +27,40 @@ const getCategories = async (req, res, next) => {
 };
 
 /**
+ * Fetch all categories (active & inactive) with menu item count
+ * GET /api/categories/admin
+ * Access: Private (Admin / Owner)
+ */
+const getAdminCategories = async (req, res, next) => {
+  try {
+    const categories = await Category.find().sort({ displayOrder: 1, name: 1 });
+    const counts = await MenuItem.aggregate([
+      { $group: { _id: '$category', count: { $sum: 1 } } }
+    ]);
+    const countMap = {};
+    counts.forEach(c => {
+      if (c._id) countMap[c._id.toString()] = c.count;
+    });
+
+    const enriched = categories.map(cat => ({
+      ...cat.toJSON(),
+      itemCount: countMap[cat._id.toString()] || 0
+    }));
+
+    res.status(200).json({
+      success: true,
+      count: enriched.length,
+      categories: enriched
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Fetch single category by slug
  * GET /api/categories/:slug
+ * Access: Public
  */
 const getCategoryBySlug = async (req, res, next) => {
   try {
@@ -49,36 +88,69 @@ const getCategoryBySlug = async (req, res, next) => {
 /**
  * Create a new category
  * POST /api/categories
+ * Access: Private (Admin / Owner)
  */
 const createCategory = async (req, res, next) => {
   try {
-    const { name, slug, description, image, isActive } = req.body;
+    const { name, slug, description, image, displayOrder, isActive } = req.body;
 
-    // Require slug before normalization
-    if (!slug || !slug.toString().trim()) {
+    if (!name || !name.toString().trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Category name is required'
+      });
+    }
+
+    const cleanName = name.toString().trim();
+
+    // Auto-generate slug if not provided
+    const rawSlug = slug && slug.toString().trim()
+      ? slug.toString().trim()
+      : cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+
+    const normalizedSlug = rawSlug.toLowerCase().trim();
+
+    if (!normalizedSlug) {
       return res.status(400).json({
         success: false,
         message: 'Category slug is required'
       });
     }
 
-    const normalizedSlug = slug.toString().toLowerCase().trim();
+    if (RESERVED_SLUGS.includes(normalizedSlug)) {
+      return res.status(400).json({
+        success: false,
+        message: `The slug "${normalizedSlug}" is reserved for system use. Please choose another.`
+      });
+    }
 
-    // Duplicate slug check
-    const existing = await Category.findOne({ slug: normalizedSlug });
-    if (existing) {
+    // 1. Case-insensitive duplicate name check
+    const existingName = await Category.findOne({
+      name: { $regex: new RegExp(`^${escapeRegex(cleanName)}$`, 'i') }
+    });
+    if (existingName) {
       return res.status(409).json({
         success: false,
-        message: 'A category with this slug already exists'
+        message: `A category with the name "${existingName.name}" already exists`
+      });
+    }
+
+    // 2. Case-insensitive duplicate slug check
+    const existingSlug = await Category.findOne({ slug: normalizedSlug });
+    if (existingSlug) {
+      return res.status(409).json({
+        success: false,
+        message: `A category with the slug "${normalizedSlug}" already exists`
       });
     }
 
     const category = await Category.create({
-      name,
+      name: cleanName,
       slug: normalizedSlug,
-      description,
-      image,
-      isActive: isActive !== undefined ? isActive : true
+      description: description ? description.toString().trim() : '',
+      image: image ? image.toString().trim() : '',
+      displayOrder: displayOrder != null ? Number(displayOrder) : 0,
+      isActive: isActive !== undefined ? Boolean(isActive) : true
     });
 
     res.status(201).json({
@@ -95,7 +167,7 @@ const createCategory = async (req, res, next) => {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: 'A category with this slug already exists'
+        message: 'A category with this name or slug already exists'
       });
     }
     next(error);
@@ -105,6 +177,7 @@ const createCategory = async (req, res, next) => {
 /**
  * Update category details
  * PUT /api/categories/:id
+ * Access: Private (Admin / Owner)
  */
 const updateCategory = async (req, res, next) => {
   try {
@@ -120,7 +193,7 @@ const updateCategory = async (req, res, next) => {
     }
 
     // Whitelist updatable fields
-    const whitelist = ['name', 'slug', 'description', 'image', 'isActive'];
+    const whitelist = ['name', 'slug', 'description', 'image', 'displayOrder', 'isActive'];
     const updateObj = {};
     for (const key of whitelist) {
       if (req.body[key] !== undefined) {
@@ -128,17 +201,49 @@ const updateCategory = async (req, res, next) => {
       }
     }
 
+    // Name normalization & case-insensitive duplicate check
+    if (updateObj.name !== undefined) {
+      const cleanName = updateObj.name.toString().trim();
+      if (!cleanName) {
+        return res.status(400).json({ success: false, message: 'Category name cannot be empty' });
+      }
+      updateObj.name = cleanName;
+      const nameConflict = await Category.findOne({
+        name: { $regex: new RegExp(`^${escapeRegex(cleanName)}$`, 'i') },
+        _id: { $ne: id }
+      });
+      if (nameConflict) {
+        return res.status(409).json({
+          success: false,
+          message: `A category with the name "${nameConflict.name}" already exists`
+        });
+      }
+    }
+
     // Slug normalization + uniqueness check (exclude self)
     if (updateObj.slug !== undefined) {
       const normalizedSlug = updateObj.slug.toString().toLowerCase().trim();
+      if (!normalizedSlug) {
+        return res.status(400).json({ success: false, message: 'Category slug cannot be empty' });
+      }
+      if (RESERVED_SLUGS.includes(normalizedSlug)) {
+        return res.status(400).json({
+          success: false,
+          message: `The slug "${normalizedSlug}" is reserved for system use. Please choose another.`
+        });
+      }
       updateObj.slug = normalizedSlug;
       const slugConflict = await Category.findOne({ slug: normalizedSlug, _id: { $ne: id } });
       if (slugConflict) {
         return res.status(409).json({
           success: false,
-          message: 'A category with this slug already exists'
+          message: `A category with the slug "${normalizedSlug}" already exists`
         });
       }
+    }
+
+    if (updateObj.displayOrder !== undefined) {
+      updateObj.displayOrder = Number(updateObj.displayOrder) || 0;
     }
 
     // Apply whitelisted fields and run schema validation via save()
@@ -158,7 +263,7 @@ const updateCategory = async (req, res, next) => {
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
-        message: 'A category with this slug already exists'
+        message: 'A category with this name or slug already exists'
       });
     }
     next(error);
@@ -168,6 +273,7 @@ const updateCategory = async (req, res, next) => {
 /**
  * Activate or deactivate a category
  * PATCH /api/categories/:id/status
+ * Access: Private (Admin / Owner)
  */
 const updateCategoryStatus = async (req, res, next) => {
   try {
@@ -203,6 +309,7 @@ const updateCategoryStatus = async (req, res, next) => {
 /**
  * Delete a category — blocked if it has assigned MenuItems
  * DELETE /api/categories/:id
+ * Access: Private (Admin / Owner)
  */
 const deleteCategory = async (req, res, next) => {
   try {
@@ -222,7 +329,7 @@ const deleteCategory = async (req, res, next) => {
     if (menuItemCount > 0) {
       return res.status(409).json({
         success: false,
-        message: 'Cannot delete category because menu items are assigned to it',
+        message: `Cannot delete category "${category.name}" because ${menuItemCount} menu item(s) are assigned to it. Please reassign or delete the items first.`,
         menuItemCount
       });
     }
@@ -240,6 +347,7 @@ const deleteCategory = async (req, res, next) => {
 
 module.exports = {
   getCategories,
+  getAdminCategories,
   getCategoryBySlug,
   createCategory,
   updateCategory,

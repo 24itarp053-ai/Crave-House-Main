@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiCheckCircle, FiShoppingBag, FiArrowRight, FiInfo } from 'react-icons/fi';
 import Footer from '../components/Footer';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function OrderSuccessPage() {
@@ -22,10 +24,7 @@ export default function OrderSuccessPage() {
     <main className="pizza-page">
       {/* Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
       </header>
 
       {/* Success Content Wrapper */}
@@ -36,7 +35,7 @@ export default function OrderSuccessPage() {
           </div>
           
           <h2>Order Confirmed!</h2>
-          <p className="success-thankyou">Thank you for ordering from Crave House. Your order has been received and is being prepared.</p>
+          <p className="success-thankyou">Thank you for ordering from {restaurantConfig.name}. Your order has been received and is being prepared.</p>
 
           {order ? (
             <div className="order-details-summary-box">

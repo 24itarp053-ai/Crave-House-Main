@@ -4,6 +4,7 @@ import { FiArrowLeft, FiShoppingBag, FiMail, FiLock, FiAlertCircle, FiBriefcase 
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Footer from '../components/Footer';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function StaffLoginPage() {
@@ -65,10 +66,7 @@ export default function StaffLoginPage() {
     <main className="pizza-page">
       {/* Header Navigation */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/login" className="pizza-back">
           <FiArrowLeft /> Customer Login
@@ -133,7 +131,7 @@ export default function StaffLoginPage() {
                 <input
                   type="email"
                   id="email"
-                  placeholder={selectedRole === 'admin' ? 'admin@cravehouse.demo' : 'owner@cravehouse.demo'}
+                  placeholder="staff@restaurant.com"
                   value={email}
                   onChange={(e) => {
                     setEmail(e.target.value);
@@ -163,15 +161,6 @@ export default function StaffLoginPage() {
                 />
               </div>
               {errors.password && <span className="inline-error-msg">{errors.password}</span>}
-            </div>
-
-            {/* Demo Credentials Alert Helper */}
-            <div className="demo-credentials-info">
-              {selectedRole === 'admin' ? (
-                <p>Demo Admin: <strong>admin@cravehouse.demo</strong> / <strong>password123</strong></p>
-              ) : (
-                <p>Demo Owner: <strong>owner@cravehouse.demo</strong> / <strong>password123</strong></p>
-              )}
             </div>
 
             {/* Login Button */}

@@ -3,7 +3,7 @@
  * Centralized API service for profile retrieval and admin user management.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL as BASE_URL } from './apiConfig';
 
 /**
  * Get JWT token from local storage and return Authorization headers

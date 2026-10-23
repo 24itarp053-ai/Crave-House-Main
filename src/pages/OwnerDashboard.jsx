@@ -3,14 +3,16 @@ import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import {
   FiGrid, FiList, FiShoppingBag, FiCalendar, FiDollarSign,
   FiTrendingUp, FiEdit2, FiToggleLeft, FiToggleRight, FiClock, FiMapPin,
-  FiMail, FiPhone, FiUser, FiAlertCircle, FiSearch, FiPlus
+  FiMail, FiPhone, FiUser, FiAlertCircle, FiSearch, FiPlus,
+  FiTrash2, FiRefreshCw, FiCheckCircle, FiFolder
 } from 'react-icons/fi';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
 import StatCard from '../components/dashboard/StatCard';
 import StatusBadge from '../components/dashboard/StatusBadge';
+import CategoryManagement from '../components/dashboard/CategoryManagement';
 import {
-  mockTables
-} from '../data/adminMockData';
+  getTables, createTable, updateTable, toggleTableStatus, deleteTable
+} from '../services/tableService';
 import { getAdminReservations, updateReservationStatus } from '../services/reservationService';
 import { getOwnerAnalytics } from '../services/analyticsService';
 import { getOwnerOrders, getOwnerOrderById, updateOrderStatus } from '../services/orderService';
@@ -27,6 +29,7 @@ const ownerNav = [
   { label: 'Dashboard',    to: '/owner',                icon: <FiGrid /> },
   { label: 'Orders',       to: '/owner/orders',          icon: <FiShoppingBag /> },
   { label: 'Menu',         to: '/owner/menu',            icon: <FiList /> },
+  { label: 'Categories',   to: '/owner/categories',      icon: <FiFolder /> },
   { label: 'Tables',       to: '/owner/tables',          icon: <FiGrid /> },
   { label: 'Reservations', to: '/owner/reservations',    icon: <FiCalendar /> },
   { label: 'Sales',        to: '/owner/sales',           icon: <FiDollarSign /> },
@@ -426,7 +429,12 @@ function OwnerMenu() {
     <div className="dash-page">
       <div className="dash-page-header">
         <h1>Menu</h1>
-        <button className="dash-primary-btn" onClick={() => setModalMode('add')}><FiPlus /> Add Food Item</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Link to="/owner/categories" className="dash-action-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fff', color: '#444', border: '1px solid #ddd', padding: '8px 14px', borderRadius: '6px', textDecoration: 'none' }}>
+            <FiFolder /> Manage Categories
+          </Link>
+          <button className="dash-primary-btn" onClick={() => setModalMode('add')}><FiPlus /> Add Food Item</button>
+        </div>
       </div>
 
       <div className="dash-toolbar">
@@ -516,63 +524,492 @@ function OwnerMenu() {
   );
 }
 
-// ─── Tables page ──────────────────────────────────────────────────────────────
+// ─── Tables Management ────────────────────────────────────────────────────────
 const TABLE_STATUSES = ['Available', 'Reserved', 'Occupied', 'Maintenance'];
+const TABLE_AREAS = ['All', 'Main Hall', 'Outdoor Patio', 'Terrace', 'Private Dining', 'Bar Area', 'Balcony'];
+
+export function TableModal({ mode, table, onClose, onSaved }) {
+  const isEdit = mode === 'edit';
+  const [form, setForm] = useState(() =>
+    isEdit && table ? {
+      tableNumber: table.tableNumber || '',
+      name: table.name || '',
+      capacity: table.capacity != null ? String(table.capacity) : '4',
+      area: table.area || 'Main Hall',
+      isActive: table.isActive !== false,
+      description: table.description || '',
+    } : {
+      tableNumber: '',
+      name: '',
+      capacity: '4',
+      area: 'Main Hall',
+      isActive: true,
+      description: '',
+    }
+  );
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!form.tableNumber.trim()) {
+      setError('Table number is required.');
+      return;
+    }
+    const cap = parseInt(form.capacity, 10);
+    if (isNaN(cap) || cap < 1 || cap > 50) {
+      setError('Capacity must be an integer between 1 and 50.');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const payload = {
+        tableNumber: form.tableNumber.trim().toUpperCase(),
+        name: form.name.trim(),
+        capacity: cap,
+        area: form.area,
+        isActive: form.isActive,
+        description: form.description.trim(),
+      };
+
+      if (isEdit) {
+        await updateTable(table._id, payload);
+      } else {
+        await createTable(payload);
+      }
+      onSaved();
+    } catch (err) {
+      setError(err.message || 'Failed to save table.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const overlayStyle = {
+    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(0,0,0,0.5)', zIndex: 9999,
+    display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px'
+  };
+  const contentStyle = {
+    background: '#fff', borderRadius: '8px', width: '100%', maxWidth: '520px',
+    maxHeight: '90vh', overflowY: 'auto', padding: '30px',
+    boxShadow: '0 4px 20px rgba(0,0,0,0.15)', position: 'relative', color: '#333'
+  };
+  const fieldStyle = {
+    display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '14px'
+  };
+  const labelStyle = { fontSize: '12px', fontWeight: '600', color: '#555', textTransform: 'uppercase', letterSpacing: '0.4px' };
+  const inputStyle = {
+    padding: '8px 12px', borderRadius: '4px', border: '1px solid #ccc',
+    fontSize: '14px', width: '100%', boxSizing: 'border-box'
+  };
+
+  return (
+    <div style={overlayStyle} onClick={onClose}>
+      <div style={contentStyle} onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '20px', border: 'none', background: 'none', fontSize: '22px', cursor: 'pointer', color: '#666' }} aria-label="Close">&times;</button>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', margin: '0 0 20px', color: '#1a1a1a' }}>
+          {isEdit ? `Edit Table ${table?.tableNumber || ''}` : 'Add New Table'}
+        </h2>
+
+        {error && (
+          <div style={{ marginBottom: '16px', padding: '10px 14px', background: '#fff2f2', border: '1px solid #f5c6cb', color: '#9b3a3a', borderRadius: '4px', fontSize: '13px' }}>
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Table Identifier / Number *</label>
+              <input
+                style={inputStyle}
+                name="tableNumber"
+                value={form.tableNumber}
+                onChange={handleChange}
+                placeholder="e.g. T01, PATIO-01"
+                required
+              />
+            </div>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Friendly Name (Optional)</label>
+              <input
+                style={inputStyle}
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="e.g. Window Booth"
+              />
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Seating Capacity *</label>
+              <input
+                style={inputStyle}
+                type="number"
+                min="1"
+                max="50"
+                name="capacity"
+                value={form.capacity}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            <div style={fieldStyle}>
+              <label style={labelStyle}>Area / Section *</label>
+              <select style={inputStyle} name="area" value={form.area} onChange={handleChange} required>
+                <option value="Main Hall">Main Hall</option>
+                <option value="Outdoor Patio">Outdoor Patio</option>
+                <option value="Terrace">Terrace</option>
+                <option value="Private Dining">Private Dining</option>
+                <option value="Bar Area">Bar Area</option>
+                <option value="Balcony">Balcony</option>
+              </select>
+            </div>
+          </div>
+
+          <div style={fieldStyle}>
+            <label style={labelStyle}>Description (Optional)</label>
+            <textarea
+              style={{ ...inputStyle, minHeight: '60px', resize: 'vertical' }}
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              placeholder="e.g. Quiet booth table with garden view."
+            />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            <input
+              type="checkbox"
+              id="isActiveTable"
+              name="isActive"
+              checked={form.isActive}
+              onChange={handleChange}
+            />
+            <label htmlFor="isActiveTable" style={{ fontSize: '14px', cursor: 'pointer', color: '#333' }}>
+              Active table (available for guest reservations)
+            </label>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              style={{ padding: '8px 16px', borderRadius: '4px', border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="dash-action-btn"
+              style={{ padding: '8px 20px', background: 'var(--color-primary, #b8381e)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            >
+              {saving ? 'Saving...' : (isEdit ? 'Update Table' : 'Create Table')}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 function OwnerTables() {
-  const [tables, setTables] = useState(mockTables);
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const [selectedArea, setSelectedArea] = useState('All');
+  const [modalMode, setModalMode] = useState(null); // 'add' | 'edit' | null
+  const [editTable, setEditTable] = useState(null);
+  const [actionId, setActionId] = useState(null);
 
-  const cycleStatus = (id) => {
-    setTables((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const next = TABLE_STATUSES[(TABLE_STATUSES.indexOf(t.status) + 1) % TABLE_STATUSES.length];
-        return { ...t, status: next };
-      })
-    );
+  const loadTables = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const res = await getTables();
+      if (res.success && res.tables) {
+        setTables(res.tables);
+      }
+    } catch (err) {
+      console.error('Failed to load tables:', err);
+      setError(err.message || 'Failed to load tables from database.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTables();
+  }, []);
+
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    setTimeout(() => setSuccessMsg(''), 4000);
+  };
+
+  const handleToggle = async (table) => {
+    try {
+      setActionId(table._id);
+      setError('');
+      const res = await toggleTableStatus(table._id);
+      if (res.success && res.table) {
+        showSuccess(`Table ${table.tableNumber} is now ${res.table.isActive ? 'Active' : 'Deactivated'}.`);
+        await loadTables();
+      }
+    } catch (err) {
+      console.error('Failed to toggle table status:', err);
+      setError(err.message || 'Failed to update table status.');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const handleDelete = async (table) => {
+    if (!window.confirm(`Are you sure you want to permanently delete Table ${table.tableNumber}? (If this table has existing reservations, deletion will be blocked to safeguard audit history).`)) {
+      return;
+    }
+    try {
+      setActionId(table._id);
+      setError('');
+      const res = await deleteTable(table._id);
+      if (res.success) {
+        showSuccess(`Table ${table.tableNumber} deleted successfully.`);
+        await loadTables();
+      }
+    } catch (err) {
+      console.error('Failed to delete table:', err);
+      setError(err.message || 'Failed to delete table.');
+    } finally {
+      setActionId(null);
+    }
+  };
+
+  const filteredTables = selectedArea === 'All'
+    ? tables
+    : tables.filter(t => t.area === selectedArea);
+
+  const statusCounts = {
+    Available: tables.filter(t => t.liveStatus === 'Available').length,
+    Reserved: tables.filter(t => t.liveStatus === 'Reserved').length,
+    Occupied: tables.filter(t => t.liveStatus === 'Occupied').length,
+    Maintenance: tables.filter(t => t.liveStatus === 'Maintenance').length,
   };
 
   return (
     <div className="dash-page">
-      <div className="dash-page-header">
-        <h1>Tables</h1>
-        <span className="dash-page-subtitle">Frontend-only status cycling — connect to API later.</span>
+      <div className="dash-page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <div>
+          <h1>Table Management</h1>
+          <span className="dash-page-subtitle">Real database-backed restaurant tables and live reservation occupancy.</span>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            type="button"
+            className="dash-action-btn"
+            onClick={loadTables}
+            disabled={loading}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: '#fff', color: '#444', border: '1px solid #ddd', padding: '8px 14px', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            <FiRefreshCw className={loading ? 'spin' : ''} /> Refresh
+          </button>
+          <button
+            type="button"
+            className="dash-action-btn"
+            onClick={() => { setEditTable(null); setModalMode('add'); }}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--color-primary, #b8381e)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: 600 }}
+          >
+            <FiPlus /> Add Table
+          </button>
+        </div>
       </div>
 
-      {/* Summary */}
+      {error && (
+        <div style={{ marginBottom: '20px', padding: '12px 16px', background: '#fff2f2', border: '1px solid #f5c6cb', color: '#9b3a3a', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <FiAlertCircle /> <span>{error}</span>
+          </div>
+          <button onClick={() => setError('')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9b3a3a', fontWeight: 'bold' }}>&times;</button>
+        </div>
+      )}
+
+      {successMsg && (
+        <div style={{ marginBottom: '20px', padding: '12px 16px', background: '#e8f5e9', border: '1px solid #c8e6c9', color: '#2e7d32', borderRadius: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <FiCheckCircle /> <span>{successMsg}</span>
+        </div>
+      )}
+
+      {/* Summary KPI Cards */}
       <div className="stat-cards-grid">
         {TABLE_STATUSES.map((s) => (
           <StatCard
             key={s}
             label={`${s} Tables`}
-            value={tables.filter((t) => t.status === s).length}
+            value={statusCounts[s]}
             icon={<FiGrid />}
             accent={s === 'Available' ? '#4caf50' : s === 'Reserved' ? '#ff9800' : s === 'Occupied' ? '#2196f3' : '#f44336'}
           />
         ))}
       </div>
 
-      {/* Table cards */}
-      <div className="tables-grid" style={{ marginTop: 28 }}>
-        {tables.map((t) => (
-          <div key={t.id} className={`table-card status-${t.status.toLowerCase()}`}>
-            <div className="table-card-top">
-              <span className="table-label">{t.label}</span>
-              <StatusBadge status={t.status} />
-            </div>
-            <div className="table-card-capacity">
-              Capacity: <strong>{t.capacity}</strong> guests
-            </div>
-            <button
-              className="dash-action-btn"
-              onClick={() => cycleStatus(t.id)}
-              style={{ marginTop: 12, width: '100%' }}
-            >
-              Change Status
-            </button>
-          </div>
+      {/* Filter Tabs by Area */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: 24, marginBottom: 16 }}>
+        {TABLE_AREAS.map((area) => (
+          <button
+            key={area}
+            type="button"
+            onClick={() => setSelectedArea(area)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: '20px',
+              border: selectedArea === area ? '1px solid var(--color-primary, #b8381e)' : '1px solid #ddd',
+              background: selectedArea === area ? 'var(--color-primary, #b8381e)' : '#fff',
+              color: selectedArea === area ? '#fff' : '#555',
+              fontWeight: selectedArea === area ? 600 : 400,
+              cursor: 'pointer',
+              fontSize: '13px'
+            }}
+          >
+            {area} {area === 'All' ? `(${tables.length})` : `(${tables.filter(t => t.area === area).length})`}
+          </button>
         ))}
       </div>
+
+      {/* Table grid */}
+      {loading && tables.length === 0 ? (
+        <div style={{ padding: '60px 20px', textAlign: 'center', color: '#777' }}>
+          <FiRefreshCw className="spin" style={{ fontSize: '24px', marginBottom: '10px' }} />
+          <div>Loading restaurant tables...</div>
+        </div>
+      ) : filteredTables.length === 0 ? (
+        <div style={{ padding: '60px 20px', textAlign: 'center', background: '#fff', borderRadius: '12px', border: '1px dashed #ddd', marginTop: 20 }}>
+          <FiGrid style={{ fontSize: '32px', color: '#aaa', marginBottom: '12px' }} />
+          <h3 style={{ margin: '0 0 8px', color: '#333' }}>No tables found</h3>
+          <p style={{ margin: '0 0 16px', color: '#777', fontSize: '14px' }}>
+            {selectedArea === 'All' ? "You haven't added any tables yet." : `No tables configured in ${selectedArea}.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => { setEditTable(null); setModalMode('add'); }}
+            style={{ background: 'var(--color-primary, #b8381e)', color: '#fff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer' }}
+          >
+            + Add Table
+          </button>
+        </div>
+      ) : (
+        <div className="tables-grid" style={{ marginTop: 20 }}>
+          {filteredTables.map((t) => {
+            const isBusy = actionId === t._id;
+            const currentStatus = t.liveStatus || (t.isActive ? 'Available' : 'Maintenance');
+            return (
+              <div key={t._id} className={`table-card status-${currentStatus.toLowerCase()}`}>
+                <div className="table-card-top">
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span className="table-label" style={{ fontSize: '16px' }}>{t.tableNumber}</span>
+                    {t.name && <span style={{ fontSize: '12px', color: '#777' }}>{t.name}</span>}
+                  </div>
+                  <StatusBadge status={currentStatus} />
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                  <span className="table-card-capacity">
+                    Capacity: <strong>{t.capacity}</strong> guests
+                  </span>
+                  <span style={{ fontSize: '11px', background: '#f5f0ec', color: '#664d42', padding: '2px 8px', borderRadius: '10px' }}>
+                    {t.area}
+                  </span>
+                </div>
+
+                {t.description && (
+                  <p style={{ fontSize: '12px', color: '#666', margin: '6px 0 0', lineHeight: 1.3 }}>
+                    {t.description}
+                  </p>
+                )}
+
+                {t.activeReservation && (
+                  <div style={{ margin: '6px 0 0', padding: '6px 8px', background: '#fff9e6', borderRadius: '4px', fontSize: '11px', color: '#855d00', border: '1px solid #ffeeba' }}>
+                    <strong>{t.activeReservation.customerName}</strong> &bull; {t.activeReservation.time} ({t.activeReservation.guests} guests)
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: 14, paddingTop: 10, borderTop: '1px solid #f0eae6' }}>
+                  <button
+                    type="button"
+                    title="Edit table details"
+                    onClick={() => { setEditTable(t); setModalMode('edit'); }}
+                    disabled={isBusy}
+                    style={{ flex: 1, padding: '6px 8px', fontSize: '12px', border: '1px solid #ddd', background: '#fff', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: '#444' }}
+                  >
+                    <FiEdit2 /> Edit
+                  </button>
+
+                  <button
+                    type="button"
+                    title={t.isActive ? 'Deactivate table (remove from booking engine)' : 'Activate table (allow bookings)'}
+                    onClick={() => handleToggle(t)}
+                    disabled={isBusy}
+                    style={{
+                      flex: 1,
+                      padding: '6px 8px',
+                      fontSize: '12px',
+                      border: '1px solid ' + (t.isActive ? '#ffe0b2' : '#c8e6c9'),
+                      background: t.isActive ? '#fff8e1' : '#e8f5e9',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px',
+                      color: t.isActive ? '#e65100' : '#2e7d32'
+                    }}
+                  >
+                    {t.isActive ? <FiToggleRight /> : <FiToggleLeft />}
+                    {t.isActive ? 'Deactivate' : 'Activate'}
+                  </button>
+
+                  <button
+                    type="button"
+                    title="Delete table permanently (if no reservations exist)"
+                    onClick={() => handleDelete(t)}
+                    disabled={isBusy}
+                    style={{ padding: '6px 10px', fontSize: '12px', border: '1px solid #ffcdd2', background: '#ffebee', color: '#c62828', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add / Edit Table Modal */}
+      {modalMode && (
+        <TableModal
+          mode={modalMode}
+          table={modalMode === 'edit' ? editTable : null}
+          onClose={() => { setModalMode(null); setEditTable(null); }}
+          onSaved={() => {
+            setModalMode(null);
+            setEditTable(null);
+            showSuccess(modalMode === 'edit' ? 'Table updated successfully.' : 'Table created successfully.');
+            loadTables();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -794,6 +1231,7 @@ export default function OwnerDashboard() {
         <Route index element={<OwnerOverview />} />
         <Route path="orders" element={<OwnerOrders />} />
         <Route path="menu" element={<OwnerMenu />} />
+        <Route path="categories" element={<CategoryManagement />} />
         <Route path="tables" element={<OwnerTables />} />
         <Route path="reservations" element={<OwnerReservations />} />
         <Route path="sales" element={<OwnerSales />} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FiMenu, FiX, FiLogOut, FiHome } from 'react-icons/fi';
 import { useAuth } from '../../context/AuthContext';
+import restaurantConfig from '../../config/restaurantConfig';
 
 /**
  * DashboardLayout — shared sidebar + main content shell for Admin and Owner.
@@ -34,11 +35,11 @@ export default function DashboardLayout({ role, title, navItems, children }) {
       <aside className={`dash-sidebar ${sidebarOpen ? 'open' : ''}`}>
         {/* Brand */}
         <div className="dash-sidebar-brand">
-          <Link to="/" className="dash-brand-logo" aria-label="Crave House Home">
-            <span>CH</span>
+          <Link to="/" className="dash-brand-logo" aria-label={`${restaurantConfig.name} Home`}>
+            <span>{restaurantConfig.shortName}</span>
           </Link>
           <div className="dash-brand-text">
-            <strong>Crave House</strong>
+            <strong>{restaurantConfig.name}</strong>
             <small>{title}</small>
           </div>
           <button

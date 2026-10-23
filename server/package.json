@@ -7,15 +7,26 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed:users": "node src/utils/seedUsers.js",
-    "seed:menu": "node src/utils/seedMenu.js"
+    "seed:menu": "node src/utils/seedMenu.js",
+    "seed:tables": "node src/utils/seedTables.js",
+    "test": "node src/utils/securityAndIntegrity.test.js && node src/utils/paymentWebhook.test.js && node src/utils/restaurantConfig.test.js && node src/utils/tableAndReservation.test.js && node src/utils/dynamicCategory.test.js && node src/utils/emailNotification.test.js",
+    "test:security": "node src/utils/securityAndIntegrity.test.js",
+    "test:webhook": "node src/utils/paymentWebhook.test.js",
+    "test:config": "node src/utils/restaurantConfig.test.js",
+    "test:tables": "node src/utils/tableAndReservation.test.js",
+    "test:categories": "node src/utils/dynamicCategory.test.js",
+    "test:email": "node src/utils/emailNotification.test.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.1",
+    "nodemailer": "^10.2.1",
     "razorpay": "^2.9.8"
   },
   "devDependencies": {

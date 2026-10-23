@@ -2,8 +2,14 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { FiArrowRight } from 'react-icons/fi';
+import { resolveImage } from '../services/menuService';
 
-export default function CategoryCard({ category, index }) {
+export default function CategoryCard({ category, index = 0 }) {
+  const targetPath = category.path || `/menu/${category.slug}`;
+  const resolvedImg = resolveImage(category.image);
+  const buttonText = category.button || `Explore ${category.name}`;
+  const iconText = category.icon || '🍽️';
+
   return (
     <motion.article
       className="explore-card"
@@ -13,22 +19,24 @@ export default function CategoryCard({ category, index }) {
       viewport={{ once: true, amount: 0.2 }}
       transition={{ duration: 0.4, delay: index * 0.08 }}
     >
-      <Link to={category.path} className="explore-card-link" aria-label={category.button}>
-        <img
-          src={category.image}
-          alt={category.name}
-          loading="lazy"
-          style={{ objectPosition: category.position }}
-        />
+      <Link to={targetPath} className="explore-card-link" aria-label={buttonText}>
+        {resolvedImg && (
+          <img
+            src={resolvedImg}
+            alt={category.name}
+            loading="lazy"
+            style={{ objectPosition: category.position || 'center' }}
+          />
+        )}
         <div className="explore-overlay" />
         <div className="explore-content">
           <span className="category-icon" aria-hidden="true">
-            {category.icon}
+            {iconText}
           </span>
           <h3>{category.name}</h3>
-          <p>{category.description}</p>
+          {category.description && <p>{category.description}</p>}
           <span className="explore-button">
-            {category.button} <FiArrowRight />
+            {buttonText} <FiArrowRight />
           </span>
         </div>
       </Link>

@@ -8,6 +8,8 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { getMyReservations } from '../services/reservationService';
 import Footer from '../components/Footer';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 /** Format ISO date string → "20 August 2026" */
@@ -82,10 +84,7 @@ export default function MyReservationsPage() {
     <main className="pizza-page">
       {/* ── Header ── */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/account" className="pizza-back">
           <FiArrowLeft /> My Account
@@ -104,7 +103,7 @@ export default function MyReservationsPage() {
           <br />
           <em>Reservations.</em>
         </h1>
-        <p>View, track, and manage your Crave House table reservations.</p>
+        <p>View, track, and manage your {restaurantConfig.name} table reservations.</p>
       </section>
 
       {/* ── Content ── */}
@@ -126,7 +125,7 @@ export default function MyReservationsPage() {
             </div>
             <h2>No reservations yet</h2>
             <p>
-              Book a table at Crave House and your reservations will appear here.
+              Book a table at {restaurantConfig.name} and your reservations will appear here.
             </p>
             <Link to="/book-table" className="explore-menu-btn">
               Book a Table &rarr;
@@ -262,7 +261,7 @@ export default function MyReservationsPage() {
             <div className="demo-credentials-info" style={{ marginTop: '30px' }}>
               <p>
                 💡 <strong>System Note:</strong> Your table reservations are saved securely
-                in the Crave House database.
+                in the {restaurantConfig.name} database.
               </p>
             </div>
           </div>

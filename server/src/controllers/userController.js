@@ -165,11 +165,11 @@ const updateUserStatus = async (req, res, next) => {
       });
     }
 
-    // Admin self-protection
+    // Self-protection: user cannot deactivate their own account
     if (userId === req.user.id && status === 'Inactive') {
       return res.status(400).json({
         success: false,
-        message: 'Admin cannot deactivate their own account.'
+        message: 'You cannot deactivate your own account.'
       });
     }
 
@@ -178,6 +178,14 @@ const updateUserStatus = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'User not found'
+      });
+    }
+
+    // Role hierarchy protection: Admin cannot deactivate an Owner account
+    if (user.role === 'owner' && req.user.role !== 'owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot deactivate an Owner account.'
       });
     }
 
@@ -195,9 +203,9 @@ const updateUserStatus = async (req, res, next) => {
 };
 
 /**
- * @desc    Update user details & role (Admin only)
+ * @desc    Update user details & role (Admin / Owner)
  * @route   PUT /api/users/:id
- * @access  Private (Admin only)
+ * @access  Private (Admin / Owner)
  */
 const updateUser = async (req, res, next) => {
   try {
@@ -211,18 +219,18 @@ const updateUser = async (req, res, next) => {
       });
     }
 
-    // Admin self-protection checks
+    // Self-protection checks: user cannot demote or deactivate their own account
     if (userId === req.user.id) {
-      if (role && role !== 'admin') {
+      if (role && role !== req.user.role) {
         return res.status(400).json({
           success: false,
-          message: 'Admin cannot revoke their own admin role.'
+          message: 'You cannot change your own role.'
         });
       }
       if (status === 'Inactive') {
         return res.status(400).json({
           success: false,
-          message: 'Admin cannot deactivate their own account.'
+          message: 'You cannot deactivate your own account.'
         });
       }
     }
@@ -232,6 +240,22 @@ const updateUser = async (req, res, next) => {
       return res.status(404).json({
         success: false,
         message: 'User not found'
+      });
+    }
+
+    // Hierarchy protection: Admin cannot modify an Owner account
+    if (user.role === 'owner' && req.user.role !== 'owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admins cannot modify an Owner account.'
+      });
+    }
+
+    // Hierarchy protection: Only an Owner can assign the 'owner' role
+    if (role === 'owner' && req.user.role !== 'owner') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only an Owner can assign the Owner role.'
       });
     }
 

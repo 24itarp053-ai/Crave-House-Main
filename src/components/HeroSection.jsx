@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { FiArrowUpRight, FiClock, FiStar } from 'react-icons/fi';
 import foodCollage from '../assets/crave-food-collage.png';
+import restaurantConfig from '../config/restaurantConfig';
 
 const revealAnimation = {
   initial: { opacity: 0, y: 26 },
@@ -20,12 +21,20 @@ export default function HeroSection() {
         <motion.div {...revealAnimation} className="hero-copy">
           <p className="eyebrow">✦ The taste you deserve</p>
           <h1>
-            Delicious food,<em> delivered fast.</em>
+            {restaurantConfig.tagline?.includes(',') ? (
+              <>
+                {restaurantConfig.tagline.split(',')[0]},
+                <em> {restaurantConfig.tagline.split(',').slice(1).join(',').trim()}</em>
+              </>
+            ) : (
+              <>
+                {restaurantConfig.tagline || 'Delicious food,'}
+                <em> delivered fast.</em>
+              </>
+            )}
           </h1>
           <p className="lead">
-            Fresh ingredients. Fast delivery. Premium taste.
-            <br />
-            Made with love.
+            {restaurantConfig.description}
           </p>
 
           <div className="actions">
@@ -53,7 +62,7 @@ export default function HeroSection() {
           transition={{ duration: 0.9 }}
           className="hero-dish"
         >
-          <img src={foodCollage} alt="A selection of Crave House dishes" />
+          <img src={foodCollage} alt={`A selection of ${restaurantConfig.name} dishes`} />
           <div className="dish-note">
             made with
             <br />

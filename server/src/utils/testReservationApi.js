@@ -86,12 +86,15 @@ async function main() {
   report('4. Unauthenticated status update -> 401', r4.status === 401, `Status: ${r4.status}`);
 
   // 2. Customer Checks
-  console.log('\n--- 2. Customer Checks ---');
+  const futureTestDate = new Date();
+  futureTestDate.setDate(futureTestDate.getDate() + 7);
+  const futureDateStr = futureTestDate.toISOString().split('T')[0];
+
   const resData = {
     customerName: 'Customer A',
     email: CUST_A_EMAIL,
     phone: '9999999999',
-    date: '2026-08-25',
+    date: futureDateStr,
     time: '19:30',
     guests: 4,
     specialRequest: 'Window seat please'

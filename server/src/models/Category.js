@@ -16,11 +16,18 @@ const categorySchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
   },
   image: {
     type: String,
-    trim: true
+    trim: true,
+    default: ''
+  },
+  displayOrder: {
+    type: Number,
+    default: 0,
+    index: true
   },
   isActive: {
     type: Boolean,
@@ -30,6 +37,12 @@ const categorySchema = new mongoose.Schema({
 }, {
   timestamps: true
 });
+
+// Enforce database-level case-insensitive uniqueness on category name
+categorySchema.index(
+  { name: 1 },
+  { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 
 // Ensure _id/id formatting matches User model
 categorySchema.set('toJSON', {

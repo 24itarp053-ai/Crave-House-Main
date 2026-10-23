@@ -1,6 +1,8 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
+import restaurantConfig from '../config/restaurantConfig';
+
 const revealAnimation = {
   initial: { opacity: 0, y: 26 },
   whileInView: { opacity: 1, y: 0 },
@@ -24,7 +26,7 @@ const reviews = [
   {
     id: 3,
     name: 'Riya Patel',
-    comment: 'Crave House has become our weekend ritual. Warm people and incredible flavours.',
+    comment: `${restaurantConfig.name} has become our weekend ritual. Warm people and incredible flavours.`,
     role: 'Verified guest',
   },
 ];

@@ -4,13 +4,10 @@ import { FiShoppingBag, FiMenu, FiX } from 'react-icons/fi';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 
+import BrandLogo from './BrandLogo';
+
 export function Logo() {
-  return (
-    <a className="logo" href="#home">
-      <span>CH</span>
-      <i>Crave House</i>
-    </a>
-  );
+  return <BrandLogo variant="logo" href="#home" />;
 }
 
 export default function Navbar() {

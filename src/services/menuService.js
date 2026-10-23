@@ -4,11 +4,7 @@
  * All components should use these functions — never fetch directly from pages.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-
-if (!BASE_URL) {
-  console.warn('[menuService] VITE_API_URL is not set. API calls will fail.');
-}
+import { API_BASE_URL as BASE_URL } from './apiConfig';
 
 /**
  * Slug mapping: frontend route slug → MongoDB category slug
@@ -28,6 +24,17 @@ const imageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,svg,webp
   import: 'default'
 });
 
+export const resolveImage = (imagePath) => {
+  if (imagePath && typeof imagePath === 'string') {
+    const filename = imagePath.split('/').pop();
+    const mapKey = `../assets/images/${filename}`;
+    if (imageModules[mapKey]) {
+      return imageModules[mapKey];
+    }
+  }
+  return imagePath || '';
+};
+
 /**
  * Normalize a raw API item so existing card components receive expected fields.
  * - price: number (279) → string ('₹279')
@@ -35,16 +42,7 @@ const imageModules = import.meta.glob('../assets/images/*.{png,jpg,jpeg,svg,webp
  * - id, image, rating, name, description, isPopular, isAvailable pass through unchanged
  */
 export const normalizeItem = (raw) => {
-  let resolvedImage = raw.image;
-
-  if (raw.image && typeof raw.image === 'string') {
-    // Extract filename (e.g. "cold-coffee.jpg" from "/src/assets/images/cold-coffee.jpg")
-    const filename = raw.image.split('/').pop();
-    const mapKey = `../assets/images/${filename}`;
-    if (imageModules[mapKey]) {
-      resolvedImage = imageModules[mapKey];
-    }
-  }
+  const resolvedImage = resolveImage(raw.image);
 
   return {
     ...raw,
@@ -105,6 +103,15 @@ export async function getCategories() {
 }
 
 /**
+ * GET /api/categories/admin (admin + owner)
+ * Returns all categories including inactive ones with item count.
+ */
+export async function getAdminCategories() {
+  const data = await apiFetchAuth('/categories/admin', { method: 'GET' });
+  return data.categories;
+}
+
+/**
  * GET /api/categories/:slug
  * @param {string} slug — frontend route slug (will be mapped to API slug)
  */
@@ -112,6 +119,49 @@ export async function getCategoryBySlug(slug) {
   const apiSlug = toApiSlug(slug);
   const data = await apiFetch(`/categories/${apiSlug}`);
   return data.category;
+}
+
+/**
+ * POST /api/categories (admin + owner)
+ * @param {object} categoryData - { name, slug, description, image, displayOrder, isActive }
+ */
+export async function createCategory(categoryData) {
+  return apiFetchAuth('/categories', {
+    method: 'POST',
+    body: JSON.stringify(categoryData)
+  });
+}
+
+/**
+ * PUT /api/categories/:id (admin + owner)
+ * @param {string} id
+ * @param {object} categoryData
+ */
+export async function updateCategory(id, categoryData) {
+  return apiFetchAuth(`/categories/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(categoryData)
+  });
+}
+
+/**
+ * PATCH /api/categories/:id/status (admin + owner)
+ * @param {string} id
+ * @param {boolean} isActive
+ */
+export async function updateCategoryStatus(id, isActive) {
+  return apiFetchAuth(`/categories/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ isActive })
+  });
+}
+
+/**
+ * DELETE /api/categories/:id (admin + owner)
+ * @param {string} id
+ */
+export async function deleteCategory(id) {
+  return apiFetchAuth(`/categories/${id}`, { method: 'DELETE' });
 }
 
 // ─── Menu Items ──────────────────────────────────────────────────────────────

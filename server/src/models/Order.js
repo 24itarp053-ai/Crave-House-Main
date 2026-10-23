@@ -126,7 +126,7 @@ const orderSchema = new mongoose.Schema({
       type: String,
       required: [true, 'Payment method is required'],
       enum: {
-        values: ['COD', 'Card', 'UPI', 'NetBanking', 'online', 'Online'],
+        values: ['COD', 'cod', 'Card', 'card', 'UPI', 'upi', 'NetBanking', 'netbanking', 'wallet', 'online', 'Online'],
         message: 'Invalid payment method'
       },
       default: 'COD'
@@ -154,6 +154,36 @@ const orderSchema = new mongoose.Schema({
     },
     default: 'Pending',
     index: true
+  },
+  notifications: {
+    orderPlaced: {
+      status: {
+        type: String,
+        enum: ['none', 'pending', 'sending', 'sent', 'failed'],
+        default: 'none'
+      },
+      attempts: { type: Number, default: 0 },
+      sentAt: { type: Date },
+      lastAttemptAt: { type: Date },
+      lastError: { type: String },
+      messageId: { type: String }
+    },
+    paymentSuccess: {
+      status: {
+        type: String,
+        enum: ['none', 'pending', 'sending', 'sent', 'failed'],
+        default: 'none'
+      },
+      attempts: { type: Number, default: 0 },
+      sentAt: { type: Date },
+      lastAttemptAt: { type: Date },
+      lastError: { type: String },
+      messageId: { type: String }
+    },
+    orderPlacedSent: { type: Boolean, default: false },
+    orderPlacedSentAt: { type: Date },
+    paymentSuccessSent: { type: Boolean, default: false },
+    paymentSuccessSentAt: { type: Date }
   }
 }, {
   timestamps: true

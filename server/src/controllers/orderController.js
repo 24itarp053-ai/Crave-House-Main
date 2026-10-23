@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const MenuItem = require('../models/MenuItem');
+const { sendOrderConfirmation } = require('../services/emailService');
 
 /**
  * @desc    Create new customer order
@@ -190,6 +191,11 @@ const createOrder = async (req, res, next) => {
     });
 
     const savedOrder = await newOrder.save();
+
+    // Asynchronously send order placement confirmation email without blocking response
+    sendOrderConfirmation(savedOrder).catch(err => {
+      console.error('[OrderController] Email dispatch warning:', err.message);
+    });
 
     res.status(201).json({
       success: true,

@@ -4,11 +4,15 @@ const {
   createPaymentOrder,
   verifyPayment,
   handlePaymentFailure,
-  getAdminPayments
+  getAdminPayments,
+  handleWebhook
 } = require('../controllers/paymentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// All payment endpoints require user authentication
+// Public webhook endpoint (Called asynchronously by Razorpay; verified via HMAC-SHA256)
+router.post('/webhook', handleWebhook);
+
+// All subsequent customer & administrative payment endpoints require JWT authentication
 router.use(protect);
 
 // Customer payment endpoints

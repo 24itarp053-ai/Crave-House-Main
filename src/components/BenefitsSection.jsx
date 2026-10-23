@@ -24,10 +24,12 @@ const benefits = [
   },
 ];
 
+import restaurantConfig from '../config/restaurantConfig';
+
 export default function BenefitsSection() {
   return (
     <section className="benefits">
-      <p className="eyebrow">The Crave House promise</p>
+      <p className="eyebrow">The {restaurantConfig.name} promise</p>
       <div>
         {benefits.map((item, index) => {
           const IconComponent = item.icon;

@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {
+  checkAvailability,
   createReservation,
   getMyReservations,
   getAdminReservations,
@@ -8,7 +9,10 @@ const {
 } = require('../controllers/reservationController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// Secure all reservation routes under authentication middleware
+// Public availability verification endpoint (accessible before customer login)
+router.get('/availability', checkAvailability);
+
+// Secure subsequent reservation routes under authentication middleware
 router.use(protect);
 
 // Admin/Owner-only list

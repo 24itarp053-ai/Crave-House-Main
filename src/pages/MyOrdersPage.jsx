@@ -4,6 +4,7 @@ import { FiArrowLeft, FiShoppingBag, FiInfo, FiClock, FiTrash2, FiMapPin, FiPack
 import { useCart } from '../context/CartContext';
 import Footer from '../components/Footer';
 import { getMyOrders } from '../services/orderService';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 const STATUS_STYLES = {
@@ -68,10 +69,7 @@ export default function MyOrdersPage() {
     <main className="pizza-page">
       {/* Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/order" className="pizza-back">
           <FiArrowLeft /> Back to Menu

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiHome, FiAlertTriangle } from 'react-icons/fi';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 /**
@@ -12,10 +13,7 @@ export default function NotFoundPage() {
     <main className="pizza-page" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Minimal header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
         <Link to="/" className="pizza-back">
           <FiHome /> Back to Home
         </Link>

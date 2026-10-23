@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import Footer from '../components/Footer';
 import { updateProfile, changePassword as apiChangePassword } from '../services/userService';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function CustomerDashboard() {
@@ -122,10 +123,7 @@ export default function CustomerDashboard() {
     <main className="pizza-page">
       {/* Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/order" className="pizza-back">
           <FiArrowLeft /> Back to Menu

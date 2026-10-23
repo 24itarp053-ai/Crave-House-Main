@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import foodCollage from '../assets/crave-food-collage.png';
+import restaurantConfig from '../config/restaurantConfig';
 
 const revealAnimation = {
   initial: { opacity: 0, y: 26 },
@@ -13,11 +14,11 @@ export default function AboutSection() {
   return (
     <section id="about" className="about">
       <div className="about-image">
-        <img loading="lazy" src={foodCollage} alt="Fresh food at Crave House" />
+        <img loading="lazy" src={foodCollage} alt={`Fresh food at ${restaurantConfig.name}`} />
         <span>
           Since
           <br />
-          <b>2016</b>
+          <b>{restaurantConfig.sinceYear}</b>
         </span>
       </div>
 
@@ -29,8 +30,8 @@ export default function AboutSection() {
           <em>It’s a feeling.</em>
         </h2>
         <p>
-          Our journey began with one mission — serve delicious food with unforgettable taste. At
-          Crave House, every plate is an invitation to slow down, connect and savour the good stuff.
+          Our journey began with one mission — serve delicious food with unforgettable taste. At{' '}
+          {restaurantConfig.name}, every plate is an invitation to slow down, connect and savour the good stuff.
         </p>
 
         <div className="feature-list">
@@ -53,10 +54,10 @@ export default function AboutSection() {
         <div className="hours">
           <span>OPENING HOURS</span>
           <p>
-            Monday – Friday <b>10AM – 10PM</b>
+            {restaurantConfig.businessHours.weekdays.days} <b>{restaurantConfig.businessHours.weekdays.hours}</b>
           </p>
           <p>
-            Saturday – Sunday <b>9AM – 11PM</b>
+            {restaurantConfig.businessHours.weekends.days} <b>{restaurantConfig.businessHours.weekends.hours}</b>
           </p>
         </div>
       </motion.div>

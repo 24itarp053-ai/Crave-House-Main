@@ -4,11 +4,12 @@ import {
   FiGrid, FiList, FiShoppingBag, FiCalendar, FiUsers, FiBarChart2,
   FiTrendingUp, FiTrendingDown, FiDollarSign, FiEdit2, FiTrash2,
   FiToggleLeft, FiToggleRight, FiSearch, FiPlus, FiClock, FiMapPin,
-  FiMail, FiPhone, FiUser, FiAlertCircle, FiCreditCard
+  FiMail, FiPhone, FiUser, FiAlertCircle, FiCreditCard, FiFolder
 } from 'react-icons/fi';
 import DashboardLayout from '../components/dashboard/DashboardLayout';
 import StatCard from '../components/dashboard/StatCard';
 import StatusBadge from '../components/dashboard/StatusBadge';
+import CategoryManagement from '../components/dashboard/CategoryManagement';
 import { getAdminReservations, updateReservationStatus } from '../services/reservationService';
 import { getAdminAnalytics } from '../services/analyticsService';
 import { getAdminOrders, getAdminOrderById, updateOrderStatus, updateOrderPaymentStatus } from '../services/orderService';
@@ -29,6 +30,7 @@ const adminNav = [
   { label: 'Payments',    to: '/admin/payments',       icon: <FiCreditCard /> },
   { label: 'Reservations',to: '/admin/reservations',   icon: <FiCalendar /> },
   { label: 'Menu',        to: '/admin/menu',           icon: <FiList /> },
+  { label: 'Categories',  to: '/admin/categories',     icon: <FiFolder /> },
   { label: 'Customers',   to: '/admin/customers',      icon: <FiUsers /> },
   { label: 'Analytics',   to: '/admin/analytics',      icon: <FiBarChart2 /> },
 ];
@@ -761,7 +763,12 @@ function AdminMenu() {
     <div className="dash-page">
       <div className="dash-page-header">
         <h1>Menu Management</h1>
-        <button className="dash-primary-btn" onClick={() => setModalMode('add')}><FiPlus /> Add Food Item</button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <Link to="/admin/categories" className="dash-action-btn" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fff', color: '#444', border: '1px solid #ddd', padding: '8px 14px', borderRadius: '6px', textDecoration: 'none' }}>
+            <FiFolder /> Manage Categories
+          </Link>
+          <button className="dash-primary-btn" onClick={() => setModalMode('add')}><FiPlus /> Add Food Item</button>
+        </div>
       </div>
 
       <div className="dash-toolbar">
@@ -1444,6 +1451,7 @@ export default function AdminDashboard() {
         <Route path="payments" element={<AdminPayments />} />
         <Route path="reservations" element={<AdminReservations />} />
         <Route path="menu" element={<AdminMenu />} />
+        <Route path="categories" element={<CategoryManagement />} />
         <Route path="customers" element={<AdminCustomers />} />
         <Route path="analytics" element={<AdminAnalytics />} />
         <Route path="*" element={<Navigate to="/admin" replace />} />

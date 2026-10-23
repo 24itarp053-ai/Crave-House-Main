@@ -4,6 +4,8 @@ import { FiArrowLeft, FiShoppingBag, FiUser, FiMail, FiPhone, FiLock, FiAlertCir
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 export default function RegisterPage() {
@@ -93,10 +95,7 @@ export default function RegisterPage() {
     <main className="pizza-page">
       {/* Header Navigation */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/login" className="pizza-back">
           <FiArrowLeft /> Back to login
@@ -111,8 +110,8 @@ export default function RegisterPage() {
       <section className="auth-container" style={{ padding: '40px max(6vw, 24px) 60px' }}>
         <div className="auth-card">
           <div className="auth-header">
-            <span className="logo-badge">CH</span>
-            <h2>CRAVE HOUSE</h2>
+            <span className="logo-badge">{restaurantConfig.shortName}</span>
+            <h2>{restaurantConfig.name.toUpperCase()}</h2>
             <p className="auth-subtitle">Create Account</p>
           </div>
 

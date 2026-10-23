@@ -3,7 +3,7 @@
  * Centralized API service for managing table reservations in MongoDB.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+import { API_BASE_URL as BASE_URL } from './apiConfig';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('craveHouseToken');
@@ -69,7 +69,7 @@ export async function getAdminReservations() {
  * PATCH /api/reservations/:id/status
  * Update reservation operational status (Admin/Owner)
  */
-export async function updateReservationStatus(id, status) {
+export async function updateReservationStatus(id, status, table = null) {
   const url = `${BASE_URL}/reservations/${id}/status`;
   const response = await fetch(url, {
     method: 'PATCH',
@@ -77,7 +77,24 @@ export async function updateReservationStatus(id, status) {
       'Content-Type': 'application/json',
       ...getAuthHeaders()
     },
-    body: JSON.stringify({ status })
+    body: JSON.stringify(table ? { status, table } : { status })
+  });
+  return handleResponse(response);
+}
+
+/**
+ * GET /api/reservations/availability
+ * Verify table availability against live database bookings and business hours
+ */
+export async function checkTableAvailability({ date, time, guests }) {
+  const params = new URLSearchParams({ date, time, guests: String(guests) });
+  const url = `${BASE_URL}/reservations/availability?${params.toString()}`;
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      ...getAuthHeaders()
+    }
   });
   return handleResponse(response);
 }

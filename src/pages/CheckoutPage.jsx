@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import Footer from '../components/Footer';
 import { createOrder } from '../services/orderService';
 import { createPaymentOrder, verifyPayment, reportPaymentFailed } from '../services/paymentService';
+import restaurantConfig from '../config/restaurantConfig';
+import BrandLogo from '../components/BrandLogo';
 import '../pizza-page.css';
 
 // Helper to safely load Razorpay Checkout JS SDK dynamically
@@ -224,8 +226,8 @@ export default function CheckoutPage() {
         const options = {
           key: rzpData.keyId,
           amount: rzpData.amount,
-          currency: rzpData.currency || 'INR',
-          name: 'Crave House',
+          currency: rzpData.currency || restaurantConfig.pricing.currencyCode,
+          name: restaurantConfig.name,
           description: `Order #${createdOrder.orderNumber}`,
           order_id: rzpData.razorpayOrderId,
           prefill: {
@@ -234,7 +236,7 @@ export default function CheckoutPage() {
             contact: phone
           },
           theme: {
-            color: '#d4a373'
+            color: restaurantConfig.theme.accent
           },
           handler: async function (response) {
             try {
@@ -316,10 +318,7 @@ export default function CheckoutPage() {
     <main className="pizza-page">
       {/* Header */}
       <header className="pizza-nav">
-        <Link to="/" className="pizza-brand">
-          <span>CH</span>
-          <i>Crave House</i>
-        </Link>
+        <BrandLogo />
 
         <Link to="/cart" className="pizza-back">
           <FiArrowLeft /> Back to Cart
@@ -623,8 +622,8 @@ export default function CheckoutPage() {
                 <div className="pickup-info-card">
                   <FiInfo className="pickup-info-icon" />
                   <div>
-                    <strong>Crave House Main Restaurant</strong>
-                    <p>Connaught Place, Radial Road 3, New Delhi, 110001</p>
+                    <strong>{restaurantConfig.contact.pickupLocationName}</strong>
+                    <p>{restaurantConfig.contact.address.fullAddress}</p>
                     <span className="pickup-timing">Fulfillment Time: approx. 20-25 mins</span>
                   </div>
                 </div>

@@ -1,7 +1,8 @@
+const User = require('../models/User');
 const { verifyToken } = require('../utils/jwt');
 
 /**
- * Protect routes - authenticate token and verify identity
+ * Protect routes - authenticate token, verify existence, and check active status
  */
 const protect = async (req, res, next) => {
   let token;
@@ -23,11 +24,27 @@ const protect = async (req, res, next) => {
 
   try {
     const decoded = verifyToken(token);
-    
-    // Attach user metadata to request
+
+    // Look up user in database to ensure account still exists and is active
+    const user = await User.findById(decoded.userId).select('status role');
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User account no longer exists'
+      });
+    }
+
+    if (user.status && user.status !== 'Active') {
+      return res.status(403).json({
+        success: false,
+        message: 'Account has been deactivated. Please contact support.'
+      });
+    }
+
+    // Attach verified user metadata to request
     req.user = {
-      id: decoded.userId,
-      role: decoded.role
+      id: user._id.toString(),
+      role: user.role
     };
 
     next();
