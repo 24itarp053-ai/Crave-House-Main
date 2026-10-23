@@ -3,30 +3,7 @@
  * Centralized API service for profile retrieval and admin user management.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-/**
- * Get JWT token from local storage and return Authorization headers
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-/**
- * Internal helper to handle fetch responses
- */
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * Helper to build query parameters
@@ -48,11 +25,11 @@ function buildQuery(params = {}) {
  */
 export async function getProfile() {
   const url = `${BASE_URL}/users/profile`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -62,7 +39,7 @@ export async function getProfile() {
  */
 export async function updateProfile(profileData) {
   const url = `${BASE_URL}/users/profile`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -70,7 +47,7 @@ export async function updateProfile(profileData) {
     },
     body: JSON.stringify(profileData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -79,11 +56,11 @@ export async function updateProfile(profileData) {
  */
 export async function getUsers(params = {}) {
   const url = `${BASE_URL}/users${buildQuery(params)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -92,11 +69,11 @@ export async function getUsers(params = {}) {
  */
 export async function getUserById(userId) {
   const url = `${BASE_URL}/users/${userId}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -105,7 +82,7 @@ export async function getUserById(userId) {
  */
 export async function updateUser(userId, userData) {
   const url = `${BASE_URL}/users/${userId}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -113,7 +90,7 @@ export async function updateUser(userId, userData) {
     },
     body: JSON.stringify(userData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -122,7 +99,7 @@ export async function updateUser(userId, userData) {
  */
 export async function updateUserStatus(userId, status) {
   const url = `${BASE_URL}/users/${userId}/status`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -130,7 +107,7 @@ export async function updateUserStatus(userId, status) {
     },
     body: JSON.stringify({ status })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -142,7 +119,7 @@ export async function updateUserStatus(userId, status) {
  */
 export async function changePassword(currentPassword, newPassword, confirmPassword) {
   const url = `${BASE_URL}/users/change-password`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -150,5 +127,5 @@ export async function changePassword(currentPassword, newPassword, confirmPasswo
     },
     body: JSON.stringify({ currentPassword, newPassword, confirmPassword })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }

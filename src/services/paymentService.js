@@ -3,30 +3,7 @@
  * Frontend service for handling Razorpay payment integration with backend.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-/**
- * Get Authorization headers with stored JWT token
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-/**
- * Internal helper to process fetch HTTP responses
- */
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * Request Razorpay order creation from backend for a specific order
@@ -35,7 +12,7 @@ async function handleResponse(response) {
  */
 export async function createPaymentOrder(orderId) {
   const url = `${BASE_URL}/payments/create-order`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -43,7 +20,7 @@ export async function createPaymentOrder(orderId) {
     },
     body: JSON.stringify({ orderId })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -53,7 +30,7 @@ export async function createPaymentOrder(orderId) {
  */
 export async function verifyPayment(paymentData) {
   const url = `${BASE_URL}/payments/verify`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -61,7 +38,7 @@ export async function verifyPayment(paymentData) {
     },
     body: JSON.stringify(paymentData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -71,7 +48,7 @@ export async function verifyPayment(paymentData) {
  */
 export async function reportPaymentFailed(failureData) {
   const url = `${BASE_URL}/payments/failed`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +56,7 @@ export async function reportPaymentFailed(failureData) {
     },
     body: JSON.stringify(failureData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -97,9 +74,9 @@ export async function getAdminPayments(params = {}) {
   const queryString = qs.toString() ? `?${qs.toString()}` : '';
   const url = `${BASE_URL}/payments/admin${queryString}`;
   
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }

@@ -20,3 +20,66 @@ export function getApiBaseUrl() {
 }
 
 export const API_BASE_URL = getApiBaseUrl();
+
+/**
+ * Centralized authorization header helper
+ */
+export function getAuthHeaders() {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') return {};
+  const token = localStorage.getItem('craveHouseToken');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+/**
+ * Fetch wrapper with timeout protection for sleeping backend / cold-start detection.
+ * Defaults to 25s timeout to accommodate Render free instance spin-ups.
+ */
+export async function fetchWithTimeout(url, options = {}, timeoutMs = 25000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  const signal = options.signal || controller.signal;
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal
+    });
+    return response;
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Server request timed out. The backend server may be waking up from sleep; please try again in a few moments.');
+    }
+    if (err.message && err.message.toLowerCase().includes('failed to fetch')) {
+      throw new Error('Network error. Unable to reach the Crave House API server. Please check your connection.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * Standard HTTP response handler with auth expiration detection
+ */
+export async function handleApiResponse(response) {
+  if (!response.ok) {
+    let msg = `Request failed (${response.status})`;
+    try {
+      const body = await response.json();
+      if (body?.message) msg = body.message;
+    } catch (_) {}
+
+    // If unauthorized, notify application to invalidate stale session
+    if (response.status === 401 && typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('cravehouse:unauthorized', {
+        detail: { message: msg }
+      }));
+    }
+
+    throw new Error(msg);
+  }
+  return response.json();
+}

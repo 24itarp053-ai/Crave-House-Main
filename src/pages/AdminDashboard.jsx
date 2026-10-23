@@ -40,64 +40,138 @@ function AdminOverview() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [recentReservations, setRecentReservations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [reservationsLoading, setReservationsLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
+  const [isAuthError, setIsAuthError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     revenue: 0,
     customers: 0,
-    reservations: 64, // Static fallback matching mock
+    reservations: 0,
     pendingOrders: 0,
     completedOrders: 0,
     avgOrderValue: 0,
     cancelledOrders: 0
   });
-  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchOverviewData = async () => {
+    setIsRetrying(true);
+    setDashboardError(null);
+    setIsAuthError(false);
+    setLoading(true);
+    setStatsLoading(true);
+    setReservationsLoading(true);
+
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('craveHouseToken') : null;
+    if (!token) {
+      setDashboardError('No active session token found. Please log in as an administrator.');
+      setIsAuthError(true);
+      setLoading(false);
+      setStatsLoading(false);
+      setReservationsLoading(false);
+      setIsRetrying(false);
+      return;
+    }
+
+    try {
+      const [statsResult, ordersResult, resResult] = await Promise.allSettled([
+        getAdminAnalytics(),
+        getAdminOrders({ limit: 5 }),
+        getAdminReservations()
+      ]);
+
+      let errorMsg = null;
+      let hasAuthRejection = false;
+
+      // Process Stats
+      if (statsResult.status === 'fulfilled' && statsResult.value?.success && statsResult.value?.data?.kpis) {
+        setStats(statsResult.value.data.kpis);
+      } else if (statsResult.status === 'rejected') {
+        const msg = statsResult.reason?.message || '';
+        if (msg.includes('401') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('token')) {
+          hasAuthRejection = true;
+        }
+        errorMsg = msg;
+      }
+
+      // Process Orders
+      if (ordersResult.status === 'fulfilled' && ordersResult.value?.success && ordersResult.value?.orders) {
+        setRecentOrders(ordersResult.value.orders);
+      } else if (ordersResult.status === 'rejected') {
+        const msg = ordersResult.reason?.message || '';
+        if (msg.includes('401') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('token')) {
+          hasAuthRejection = true;
+        }
+        if (!errorMsg) errorMsg = msg;
+      }
+
+      // Process Reservations
+      if (resResult.status === 'fulfilled' && resResult.value?.success && resResult.value?.reservations) {
+        setRecentReservations(resResult.value.reservations.slice(0, 4));
+      } else if (resResult.status === 'rejected') {
+        const msg = resResult.reason?.message || '';
+        if (msg.includes('401') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('token')) {
+          hasAuthRejection = true;
+        }
+        if (!errorMsg) errorMsg = msg;
+      }
+
+      if (hasAuthRejection) {
+        setIsAuthError(true);
+        setDashboardError('Your session has expired or is unauthorized. Please log in again with administrator credentials.');
+      } else if (errorMsg) {
+        setDashboardError(errorMsg);
+      }
+    } catch (err) {
+      setDashboardError(err.message || 'Failed to connect to backend server.');
+    } finally {
+      setLoading(false);
+      setStatsLoading(false);
+      setReservationsLoading(false);
+      setIsRetrying(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadRecent() {
-      try {
-        const res = await getAdminOrders({ limit: 5 });
-        if (res.success && res.orders) {
-          setRecentOrders(res.orders);
-        }
-      } catch (e) {
-        console.error('Error loading recent orders:', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    async function loadRecentReservations() {
-      try {
-        const res = await getAdminReservations();
-        if (res.success && res.reservations) {
-          setRecentReservations(res.reservations.slice(0, 4));
-        }
-      } catch (e) {
-        console.error('Error loading overview reservations:', e);
-      }
-    }
-    async function loadStats() {
-      try {
-        const res = await getAdminAnalytics();
-        if (res.success && res.data?.kpis) {
-          setStats(res.data.kpis);
-        }
-      } catch (e) {
-        console.error('Error loading admin overview stats:', e);
-      } finally {
-        setStatsLoading(false);
-      }
-    }
-    loadRecent();
-    loadStats();
-    loadRecentReservations();
+    fetchOverviewData();
   }, []);
 
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Dashboard Overview</h1>
-        <span className="dash-page-subtitle">Welcome back — here's what's happening today.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Dashboard Overview</h1>
+          <span className="dash-page-subtitle">Welcome back — here's what's happening today.</span>
+        </div>
+        <button
+          onClick={fetchOverviewData}
+          className="dash-primary-btn"
+          disabled={isRetrying || loading}
+          style={{ cursor: isRetrying || loading ? 'not-allowed' : 'pointer' }}
+        >
+          {isRetrying || loading ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
+
+      {dashboardError && (
+        <div className="dash-alert dash-alert-error">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FiAlertCircle style={{ fontSize: '18px', flexShrink: 0 }} />
+            <span>{dashboardError}</span>
+          </div>
+          {isAuthError ? (
+            <Link to="/staff-login" className="dash-alert-retry-btn" style={{ textDecoration: 'none' }}>
+              Staff Login
+            </Link>
+          ) : (
+            <button onClick={fetchOverviewData} className="dash-alert-retry-btn" disabled={isRetrying}>
+              {isRetrying ? 'Retrying...' : 'Retry'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* KPI Stats */}
       <div className="stat-cards-grid">
@@ -136,7 +210,16 @@ function AdminOverview() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={4} className="dash-empty-row">Loading...</td>
+                    <td colSpan={4} className="dash-empty-row">Loading orders...</td>
+                  </tr>
+                ) : recentOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="dash-empty-row">
+                      <div className="dash-empty-state">
+                        <span className="dash-empty-state-title">No Orders in Database</span>
+                        <p className="dash-empty-state-desc">No customer orders have been recorded in MongoDB yet. As orders are placed, they will appear here.</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   recentOrders.map((o) => (
@@ -147,11 +230,6 @@ function AdminOverview() {
                       <td><StatusBadge status={o.status} /></td>
                     </tr>
                   ))
-                )}
-                {!loading && recentOrders.length === 0 && (
-                  <tr>
-                    <td colSpan={4} className="dash-empty-row">No orders recorded yet.</td>
-                  </tr>
                 )}
               </tbody>
             </table>
@@ -175,9 +253,18 @@ function AdminOverview() {
                 </tr>
               </thead>
               <tbody>
-                {recentReservations.length === 0 ? (
+                {reservationsLoading ? (
                   <tr>
-                    <td colSpan={4} className="dash-empty-row">No reservations recorded.</td>
+                    <td colSpan={4} className="dash-empty-row">Loading reservations...</td>
+                  </tr>
+                ) : recentReservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="dash-empty-row">
+                      <div className="dash-empty-state">
+                        <span className="dash-empty-state-title">No Reservations in Database</span>
+                        <p className="dash-empty-state-desc">No table reservations have been booked in MongoDB yet. New bookings will show up here.</p>
+                      </div>
+                    </td>
                   </tr>
                 ) : (
                   recentReservations.map((r) => (
@@ -326,8 +413,10 @@ function AdminOrders() {
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Orders</h1>
-        <span className="dash-page-subtitle">Real-time order management dashboard connected to database.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Orders</h1>
+          <span className="dash-page-subtitle">Real-time order management dashboard connected to database.</span>
+        </div>
       </div>
 
       <div className="dash-filter-row">
@@ -478,8 +567,10 @@ function AdminReservations() {
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Reservations</h1>
-        <span className="dash-page-subtitle">Live table reservations from database.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Reservations</h1>
+          <span className="dash-page-subtitle">Live table reservations from database.</span>
+        </div>
       </div>
 
       {error && (
@@ -1203,8 +1294,10 @@ function AdminAnalytics() {
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Analytics</h1>
-        <span className="dash-page-subtitle">Live analytics from MongoDB database.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Analytics</h1>
+          <span className="dash-page-subtitle">Live analytics from MongoDB database.</span>
+        </div>
       </div>
 
       {error && (
@@ -1351,8 +1444,18 @@ function AdminPayments() {
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Payment Management</h1>
-        <span className="dash-page-subtitle">Track and inspect online payment transactions stored in MongoDB.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Payment Management</h1>
+          <span className="dash-page-subtitle">Track and inspect online payment transactions stored in MongoDB.</span>
+        </div>
+        <button
+          onClick={() => fetchPayments(page)}
+          className="dash-primary-btn"
+          disabled={loading}
+          style={{ cursor: loading ? 'not-allowed' : 'pointer' }}
+        >
+          {loading ? 'Refreshing...' : 'Refresh Records'}
+        </button>
       </div>
 
       <div className="dash-section-card" style={{ marginTop: 24 }}>
@@ -1361,8 +1464,20 @@ function AdminPayments() {
         </div>
 
         {error && (
-          <div style={{ padding: '12px 16px', background: '#fff2f2', border: '1px solid #f5c6cb', color: '#9b3a3a', borderRadius: '4px', marginBottom: '16px' }}>
-            {error}
+          <div className="dash-alert dash-alert-error" style={{ margin: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <FiAlertCircle style={{ fontSize: '18px', flexShrink: 0 }} />
+              <span>{error}</span>
+            </div>
+            {error.includes('401') || error.toLowerCase().includes('token') || error.toLowerCase().includes('auth') ? (
+              <Link to="/staff-login" className="dash-alert-retry-btn" style={{ textDecoration: 'none' }}>
+                Staff Login
+              </Link>
+            ) : (
+              <button onClick={() => fetchPayments(page)} className="dash-alert-retry-btn">
+                Retry
+              </button>
+            )}
           </div>
         )}
 
@@ -1385,9 +1500,22 @@ function AdminPayments() {
                 <tr>
                   <td colSpan={8} className="dash-empty-row">Loading payment records...</td>
                 </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={8} className="dash-empty-row" style={{ color: '#9b3a3a' }}>
+                    Failed to retrieve payment records: {error}
+                  </td>
+                </tr>
               ) : payments.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="dash-empty-row">No payment records found.</td>
+                  <td colSpan={8} className="dash-empty-row">
+                    <div className="dash-empty-state">
+                      <span className="dash-empty-state-title">No Payment Records in Database</span>
+                      <p className="dash-empty-state-desc">
+                        No online payment transactions found in MongoDB. Online payments placed via Razorpay will be tracked here in real time.
+                      </p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 payments.map((p) => (

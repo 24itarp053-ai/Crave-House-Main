@@ -3,24 +3,7 @@
  * API service for managing restaurant tables in MongoDB.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * GET /api/tables
@@ -28,11 +11,11 @@ async function handleResponse(response) {
  */
 export async function getTables() {
   const url = `${BASE_URL}/tables`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -41,11 +24,11 @@ export async function getTables() {
  */
 export async function getTableById(id) {
   const url = `${BASE_URL}/tables/${id}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -54,7 +37,7 @@ export async function getTableById(id) {
  */
 export async function createTable(tableData) {
   const url = `${BASE_URL}/tables`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -62,7 +45,7 @@ export async function createTable(tableData) {
     },
     body: JSON.stringify(tableData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -71,7 +54,7 @@ export async function createTable(tableData) {
  */
 export async function updateTable(id, tableData) {
   const url = `${BASE_URL}/tables/${id}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +62,7 @@ export async function updateTable(id, tableData) {
     },
     body: JSON.stringify(tableData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -88,7 +71,7 @@ export async function updateTable(id, tableData) {
  */
 export async function toggleTableStatus(id, isActive) {
   const url = `${BASE_URL}/tables/${id}/status`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -96,7 +79,7 @@ export async function toggleTableStatus(id, isActive) {
     },
     body: JSON.stringify(isActive !== undefined ? { isActive } : {})
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -105,9 +88,9 @@ export async function toggleTableStatus(id, isActive) {
  */
 export async function deleteTable(id) {
   const url = `${BASE_URL}/tables/${id}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'DELETE',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }

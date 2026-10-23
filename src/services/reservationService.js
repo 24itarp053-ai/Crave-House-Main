@@ -3,24 +3,7 @@
  * Centralized API service for managing table reservations in MongoDB.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * POST /api/reservations
@@ -28,7 +11,7 @@ async function handleResponse(response) {
  */
 export async function createReservation(reservationData) {
   const url = `${BASE_URL}/reservations`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -36,7 +19,7 @@ export async function createReservation(reservationData) {
     },
     body: JSON.stringify(reservationData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -45,11 +28,11 @@ export async function createReservation(reservationData) {
  */
 export async function getMyReservations() {
   const url = `${BASE_URL}/reservations`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -58,11 +41,11 @@ export async function getMyReservations() {
  */
 export async function getAdminReservations() {
   const url = `${BASE_URL}/reservations/admin`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -71,7 +54,7 @@ export async function getAdminReservations() {
  */
 export async function updateReservationStatus(id, status, table = null) {
   const url = `${BASE_URL}/reservations/${id}/status`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -79,7 +62,7 @@ export async function updateReservationStatus(id, status, table = null) {
     },
     body: JSON.stringify(table ? { status, table } : { status })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -89,12 +72,12 @@ export async function updateReservationStatus(id, status, table = null) {
 export async function checkTableAvailability({ date, time, guests }) {
   const params = new URLSearchParams({ date, time, guests: String(guests) });
   const url = `${BASE_URL}/reservations/availability?${params.toString()}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       ...getAuthHeaders()
     }
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }

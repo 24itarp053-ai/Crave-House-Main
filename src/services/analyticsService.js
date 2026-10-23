@@ -3,24 +3,7 @@
  * Centralized API service for retrieving dashboard live analytics and statistics.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * GET /api/analytics/admin
@@ -28,11 +11,11 @@ async function handleResponse(response) {
  */
 export async function getAdminAnalytics() {
   const url = `${BASE_URL}/analytics/admin`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -41,9 +24,10 @@ export async function getAdminAnalytics() {
  */
 export async function getOwnerAnalytics() {
   const url = `${BASE_URL}/analytics/owner`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
+

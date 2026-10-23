@@ -3,30 +3,7 @@
  * Centralized API service for placing and retrieving customer orders.
  */
 
-import { API_BASE_URL as BASE_URL } from './apiConfig';
-
-/**
- * Get JWT token from local storage and return Authorization headers
- */
-const getAuthHeaders = () => {
-  const token = localStorage.getItem('craveHouseToken');
-  return token ? { 'Authorization': `Bearer ${token}` } : {};
-};
-
-/**
- * Internal helper to handle fetch responses
- */
-async function handleResponse(response) {
-  if (!response.ok) {
-    let msg = `Request failed (${response.status})`;
-    try {
-      const body = await response.json();
-      if (body?.message) msg = body.message;
-    } catch (_) {}
-    throw new Error(msg);
-  }
-  return response.json();
-}
+import { API_BASE_URL as BASE_URL, getAuthHeaders, fetchWithTimeout, handleApiResponse } from './apiConfig';
 
 /**
  * Create a new customer order
@@ -35,7 +12,7 @@ async function handleResponse(response) {
  */
 export async function createOrder(orderData) {
   const url = `${BASE_URL}/orders`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -43,7 +20,7 @@ export async function createOrder(orderData) {
     },
     body: JSON.stringify(orderData)
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -52,11 +29,11 @@ export async function createOrder(orderData) {
  */
 export async function getMyOrders() {
   const url = `${BASE_URL}/orders`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -66,11 +43,11 @@ export async function getMyOrders() {
  */
 export async function getOrderById(orderId) {
   const url = `${BASE_URL}/orders/${orderId}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -93,11 +70,11 @@ function buildQuery(params = {}) {
  */
 export async function getAdminOrders(params = {}) {
   const url = `${BASE_URL}/orders/admin${buildQuery(params)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -106,11 +83,11 @@ export async function getAdminOrders(params = {}) {
  */
 export async function getAdminOrderById(orderId) {
   const url = `${BASE_URL}/orders/admin/${orderId}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -119,24 +96,23 @@ export async function getAdminOrderById(orderId) {
  */
 export async function getOwnerOrders(params = {}) {
   const url = `${BASE_URL}/orders/owner${buildQuery(params)}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
  * Owner: Get individual order by ID
- * GET /api/orders/owner/:id
  */
 export async function getOwnerOrderById(orderId) {
   const url = `${BASE_URL}/orders/owner/${orderId}`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'GET',
     headers: getAuthHeaders()
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -145,7 +121,7 @@ export async function getOwnerOrderById(orderId) {
  */
 export async function updateOrderStatus(orderId, status) {
   const url = `${BASE_URL}/orders/${orderId}/status`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -153,7 +129,7 @@ export async function updateOrderStatus(orderId, status) {
     },
     body: JSON.stringify({ status })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }
 
 /**
@@ -162,7 +138,7 @@ export async function updateOrderStatus(orderId, status) {
  */
 export async function updateOrderPaymentStatus(orderId, status) {
   const url = `${BASE_URL}/orders/${orderId}/payment-status`;
-  const response = await fetch(url, {
+  const response = await fetchWithTimeout(url, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -170,5 +146,5 @@ export async function updateOrderPaymentStatus(orderId, status) {
     },
     body: JSON.stringify({ status })
   });
-  return handleResponse(response);
+  return handleApiResponse(response);
 }

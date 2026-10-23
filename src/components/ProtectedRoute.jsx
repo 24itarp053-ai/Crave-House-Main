@@ -19,8 +19,9 @@ export default function ProtectedRoute({ children, allowedRoles }) {
   }
 
   if (!isAuthenticated) {
-    // Redirect to customer login if not logged in
-    return <Navigate to="/login" replace />;
+    // Redirect to staff login for admin/owner routes, customer login otherwise
+    const isStaffRoute = allowedRoles && (allowedRoles.includes('admin') || allowedRoles.includes('owner'));
+    return <Navigate to={isStaffRoute ? '/staff-login' : '/login'} replace />;
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {

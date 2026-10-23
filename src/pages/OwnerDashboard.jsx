@@ -39,52 +39,119 @@ const ownerNav = [
 function OwnerOverview() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
+  const [isAuthError, setIsAuthError] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const [stats, setStats] = useState({
     todayOrders: 0,
     todayRevenue: 0,
     pendingOrders: 0,
-    todayReservations: 11, // Static fallback matching mock
+    todayReservations: 0,
     weeklyRevenue: 0,
     monthlyRevenue: 0,
     avgOrderValue: 0
   });
-  const [statsLoading, setStatsLoading] = useState(true);
+
+  const fetchOverviewData = async () => {
+    setIsRetrying(true);
+    setDashboardError(null);
+    setIsAuthError(false);
+    setLoading(true);
+    setStatsLoading(true);
+
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('craveHouseToken') : null;
+    if (!token) {
+      setDashboardError('No active session token found. Please log in with restaurant owner credentials.');
+      setIsAuthError(true);
+      setLoading(false);
+      setStatsLoading(false);
+      setIsRetrying(false);
+      return;
+    }
+
+    try {
+      const [statsResult, ordersResult] = await Promise.allSettled([
+        getOwnerAnalytics(),
+        getOwnerOrders({ limit: 5 })
+      ]);
+
+      let errorMsg = null;
+      let hasAuthRejection = false;
+
+      if (statsResult.status === 'fulfilled' && statsResult.value?.success && statsResult.value?.data?.kpis) {
+        setStats(statsResult.value.data.kpis);
+      } else if (statsResult.status === 'rejected') {
+        const msg = statsResult.reason?.message || '';
+        if (msg.includes('401') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('token')) {
+          hasAuthRejection = true;
+        }
+        errorMsg = msg;
+      }
+
+      if (ordersResult.status === 'fulfilled' && ordersResult.value?.success && ordersResult.value?.orders) {
+        setRecentOrders(ordersResult.value.orders);
+      } else if (ordersResult.status === 'rejected') {
+        const msg = ordersResult.reason?.message || '';
+        if (msg.includes('401') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('token')) {
+          hasAuthRejection = true;
+        }
+        if (!errorMsg) errorMsg = msg;
+      }
+
+      if (hasAuthRejection) {
+        setIsAuthError(true);
+        setDashboardError('Your session has expired or is unauthorized. Please log in again with restaurant owner credentials.');
+      } else if (errorMsg) {
+        setDashboardError(errorMsg);
+      }
+    } catch (err) {
+      setDashboardError(err.message || 'Failed to connect to backend server.');
+    } finally {
+      setLoading(false);
+      setStatsLoading(false);
+      setIsRetrying(false);
+    }
+  };
 
   useEffect(() => {
-    async function loadRecent() {
-      try {
-        const res = await getOwnerOrders({ limit: 5 });
-        if (res.success && res.orders) {
-          setRecentOrders(res.orders);
-        }
-      } catch (e) {
-        console.error('Error loading recent owner orders:', e);
-      } finally {
-        setLoading(false);
-      }
-    }
-    async function loadStats() {
-      try {
-        const res = await getOwnerAnalytics();
-        if (res.success && res.data?.kpis) {
-          setStats(res.data.kpis);
-        }
-      } catch (e) {
-        console.error('Error loading owner overview stats:', e);
-      } finally {
-        setStatsLoading(false);
-      }
-    }
-    loadRecent();
-    loadStats();
+    fetchOverviewData();
   }, []);
 
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Restaurant Overview</h1>
-        <span className="dash-page-subtitle">Today's live snapshot — real database orders.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Restaurant Overview</h1>
+          <span className="dash-page-subtitle">Today's live snapshot — real database orders.</span>
+        </div>
+        <button
+          onClick={fetchOverviewData}
+          className="dash-primary-btn"
+          disabled={isRetrying || loading}
+          style={{ cursor: isRetrying || loading ? 'not-allowed' : 'pointer' }}
+        >
+          {isRetrying || loading ? 'Refreshing...' : 'Refresh Data'}
+        </button>
       </div>
+
+      {dashboardError && (
+        <div className="dash-alert dash-alert-error">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <FiAlertCircle style={{ fontSize: '18px', flexShrink: 0 }} />
+            <span>{dashboardError}</span>
+          </div>
+          {isAuthError ? (
+            <Link to="/staff-login" className="dash-alert-retry-btn" style={{ textDecoration: 'none' }}>
+              Staff Login
+            </Link>
+          ) : (
+            <button onClick={fetchOverviewData} className="dash-alert-retry-btn" disabled={isRetrying}>
+              {isRetrying ? 'Retrying...' : 'Retry'}
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="stat-cards-grid">
         <StatCard label="Today's Orders"       value={statsLoading ? '...' : stats.todayOrders}       icon={<FiShoppingBag />} accent="#d4a373" />
@@ -112,7 +179,16 @@ function OwnerOverview() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="dash-empty-row">Loading...</td>
+                  <td colSpan={5} className="dash-empty-row">Loading orders...</td>
+                </tr>
+              ) : recentOrders.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="dash-empty-row">
+                    <div className="dash-empty-state">
+                      <span className="dash-empty-state-title">No Orders in Database</span>
+                      <p className="dash-empty-state-desc">No customer orders have been recorded in MongoDB yet. As customers order, they will appear here in real time.</p>
+                    </div>
+                  </td>
                 </tr>
               ) : (
                 recentOrders.map((o) => (
@@ -124,11 +200,6 @@ function OwnerOverview() {
                     <td><StatusBadge status={o.status} /></td>
                   </tr>
                 ))
-              )}
-              {!loading && recentOrders.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="dash-empty-row">No orders recorded yet.</td>
-                </tr>
               )}
             </tbody>
           </table>
@@ -248,8 +319,10 @@ function OwnerOrders() {
   return (
     <div className="dash-page">
       <div className="dash-page-header">
-        <h1>Orders</h1>
-        <span className="dash-page-subtitle">Restaurant operational control and status dispatching.</span>
+        <div className="dash-page-title-wrap">
+          <h1>Orders</h1>
+          <span className="dash-page-subtitle">Restaurant operational control and status dispatching.</span>
+        </div>
       </div>
 
       <div className="dash-filter-row">

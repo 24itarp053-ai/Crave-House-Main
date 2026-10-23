@@ -3108,22 +3108,106 @@
   align-items: flex-start;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
+.dash-page-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 200px;
+}
+
 .dash-page-header h1 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 22px;
   font-weight: 700;
   color: #26150f;
   margin: 0;
+  line-height: 1.3;
+  letter-spacing: -0.3px;
 }
 
 .dash-page-subtitle {
-  font-size: 12px;
+  font-size: 13px;
   color: #9e7b6b;
-  margin-top: 4px;
+  margin-top: 2px;
   display: block;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+/* ── Dashboard Alerts and Notices ────────────────────────────────────────── */
+.dash-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.dash-alert-error {
+  background: #fff3f2;
+  border: 1px solid #f8d0cd;
+  color: #9b2c2c;
+}
+
+.dash-alert-info {
+  background: #f0f7ff;
+  border: 1px solid #cce4ff;
+  color: #0b5394;
+}
+
+.dash-alert-retry-btn {
+  background: #d4a373;
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.dash-alert-retry-btn:hover {
+  background: #c48f5f;
+}
+
+.dash-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 20px;
+  text-align: center;
+  color: #8c7365;
+  gap: 8px;
+}
+
+.dash-empty-state-icon {
+  font-size: 30px;
+  color: #c4a480;
+  margin-bottom: 4px;
+}
+
+.dash-empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3e2723;
+}
+
+.dash-empty-state-desc {
+  font-size: 12px;
+  max-width: 400px;
+  line-height: 1.4;
+  margin: 0;
 }
 
 .dash-primary-btn {
@@ -3230,10 +3314,13 @@
 }
 
 .dash-section-header h2 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
   font-weight: 700;
   color: #26150f;
   margin: 0;
+  line-height: 1.4;
+  letter-spacing: 0;
 }
 
 .dash-see-all {

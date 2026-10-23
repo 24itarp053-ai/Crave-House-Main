@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-import { API_BASE_URL as API_URL } from '../services/apiConfig';
+import { API_BASE_URL as API_URL, fetchWithTimeout } from '../services/apiConfig';
 
 /**
  * Validate and clean user object structure
@@ -29,50 +29,82 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Evict stale session when an authenticated API call returns 401 Unauthorized
+  useEffect(() => {
+    const handleUnauthorized = (e) => {
+      console.warn('[AuthContext] Unauthorized API response detected, evicting invalid session:', e?.detail?.message);
+      try {
+        localStorage.removeItem('craveHouseToken');
+        localStorage.removeItem('craveHouseUser');
+      } catch (_) {}
+      setUser(null);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('cravehouse:unauthorized', handleUnauthorized);
+      return () => window.removeEventListener('cravehouse:unauthorized', handleUnauthorized);
+    }
+  }, []);
+
   // Restore session from JWT on reload
   useEffect(() => {
+    let isMounted = true;
     const restoreSession = async () => {
-      const token = localStorage.getItem('craveHouseToken');
+      const token = typeof localStorage !== 'undefined' ? localStorage.getItem('craveHouseToken') : null;
       if (token) {
         try {
-          const res = await fetch(`${API_URL}/auth/profile`, {
+          const res = await fetchWithTimeout(`${API_URL}/auth/profile`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
-          });
-          const data = await res.json();
+          }, 15000);
           
-          if (data.success && data.user) {
-            const cleaned = validateUser(data.user);
-            setUser(cleaned);
-            if (cleaned) {
-              localStorage.setItem('craveHouseUser', JSON.stringify(cleaned));
-            }
-          } else {
-            // Token is invalid/expired, clear storage
+          if (!isMounted) return;
+
+          if (res.status === 401 || res.status === 403) {
+            // Token is explicitly rejected by backend (expired, invalid secret, or user deleted)
             localStorage.removeItem('craveHouseToken');
             localStorage.removeItem('craveHouseUser');
             setUser(null);
+          } else {
+            const data = await res.json();
+            if (data.success && data.user) {
+              const cleaned = validateUser(data.user);
+              setUser(cleaned);
+              if (cleaned) {
+                localStorage.setItem('craveHouseUser', JSON.stringify(cleaned));
+              }
+            } else {
+              localStorage.removeItem('craveHouseToken');
+              localStorage.removeItem('craveHouseUser');
+              setUser(null);
+            }
           }
         } catch (error) {
-          console.error('Failed to restore auth session:', error);
-          // Fallback to offline/cached user if available
-          const stored = localStorage.getItem('craveHouseUser');
-          if (stored) {
-            try {
-              setUser(validateUser(JSON.parse(stored)));
-            } catch (e) {}
+          console.warn('Could not verify auth session online (cold-start or network):', error.message);
+          // Only restore cached user for offline customer convenience, not if token was rejected
+          if (isMounted) {
+            const stored = localStorage.getItem('craveHouseUser');
+            if (stored) {
+              try {
+                const parsed = validateUser(JSON.parse(stored));
+                // Only allow customer role offline; staff requires active backend authorization
+                if (parsed && parsed.role === 'customer') {
+                  setUser(parsed);
+                }
+              } catch (_) {}
+            }
           }
         }
       } else {
-        // Clear cached user if no token exists
         localStorage.removeItem('craveHouseUser');
-        setUser(null);
+        if (isMounted) setUser(null);
       }
-      setLoading(false);
+      if (isMounted) setLoading(false);
     };
 
     restoreSession();
+    return () => { isMounted = false; };
   }, []);
 
   /**
@@ -81,13 +113,13 @@ export function AuthProvider({ children }) {
   const login = async (email, password, expectedRole) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      const res = await fetchWithTimeout(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email, password })
-      });
+      }, 25000);
       const data = await res.json();
 
       if (!data.success) {
@@ -118,7 +150,10 @@ export function AuthProvider({ children }) {
       return { success: true, user: cleanedUser };
     } catch (err) {
       setLoading(false);
-      return { success: false, error: 'Connection error. Please try again.' };
+      return {
+        success: false,
+        error: err.message || 'Connection error. The server may be waking up; please try again.'
+      };
     }
   };
 
@@ -128,13 +163,13 @@ export function AuthProvider({ children }) {
   const register = async (name, email, password, phone) => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/auth/register`, {
+      const res = await fetchWithTimeout(`${API_URL}/auth/register`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ name, email, password, phone })
-      });
+      }, 25000);
       const data = await res.json();
 
       setLoading(false);
@@ -145,7 +180,10 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       setLoading(false);
-      return { success: false, error: 'Connection error. Please try again.' };
+      return {
+        success: false,
+        error: err.message || 'Connection error. Please try again.'
+      };
     }
   };
 
